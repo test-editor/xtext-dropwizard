@@ -1,0 +1,57 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'org.xtext:xtext-gradle-plugin:1.0.18'
+    }
+}
+
+subprojects {
+    repositories {
+        jcenter()
+        maven {
+            url  "http://dl.bintray.com/franzbecker/maven" 
+        }
+    }
+    
+    apply plugin: 'java'
+    apply plugin: 'org.xtext.xtend'
+    apply plugin: 'eclipse'
+    apply plugin: 'idea'
+
+    
+    group = 'org.testeditor.web'
+    version = '1.0.0-SNAPSHOT'
+    
+    sourceCompatibility = '1.8'
+    targetCompatibility = '1.8'
+    
+	sourceSets {
+  		main.xtendOutputDir = 'src/main/xtend-gen'
+  		test.xtendOutputDir = 'src/test/xtend-gen'
+	}
+
+    jar {
+        manifest {
+            attributes 'Implementation-Title': "${project.group}.${project.name}",
+                    'Implementation-Version': project.version
+        }
+    }
+
+    task sourcesJar(type: Jar, dependsOn: classes) {
+        classifier 'sources'
+        from sourceSets.main.allSource
+    }
+
+    artifacts {
+        archives sourcesJar
+    }
+
+	dependencies {
+        compile 'org.eclipse.xtend:org.eclipse.xtend.lib:2.12.0'
+    	testCompile 'junit:junit:4.12'
+        testCompile 'org.mockito:mockito-core:2.7.22'
+        testCompile 'de.xtendutils:junit:0.0.4'
+    }
+}
