@@ -8,10 +8,12 @@ import io.dropwizard.Configuration
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import java.util.EnumSet
+import java.util.List
 import javax.servlet.DispatcherType
 import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.servlets.CrossOriginFilter
+import org.eclipse.xtext.ISetup
 
 abstract class XtextApplication<T extends Configuration> extends Application<T> {
 
@@ -51,6 +53,7 @@ abstract class XtextApplication<T extends Configuration> extends Application<T> 
 	 * Add your modules here.
 	 */
 	protected def Iterable<Module> getModules() {
+		return newLinkedList([]) // initialize with empty module, Guice
 	}
 
 	/**
@@ -58,11 +61,14 @@ abstract class XtextApplication<T extends Configuration> extends Application<T> 
 	 */
 	protected def void configureXtextServices(T configuration, Environment environment) {
 		environment.applicationContext => [
+			xtextServlet.languageSetups += languageSetups
 			val servletHolder = new ServletHolder(xtextServlet)
 			addServlet(servletHolder, "/xtext-service/*")
 		]
 		environment.servlets.sessionHandler = new SessionHandler
 	}
+
+	abstract protected def List<ISetup> getLanguageSetups()
 
 	protected def void configureCorsFilter(T configuration, Environment environment) {
 		environment.servlets.addFilter("CORS", CrossOriginFilter) => [

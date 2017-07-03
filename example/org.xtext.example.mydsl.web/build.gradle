@@ -13,7 +13,9 @@ dependencies {
 	compile "org.webjars:requirejs:2.3.2"
 	compile "org.webjars:jquery:2.2.4"
 	providedCompile "org.eclipse.jetty:jetty-annotations:9.3.8.v20160314"
-	providedCompile "org.slf4j:slf4j-simple:1.7.21"
+	
+	// Dependencies on the org.testeditor.web.dropwizard project
+	compile "org.testeditor.web:org.testeditor.web.dropwizard:1.0.0"
 }
 def orionDir = file('src/main/webapp/orion')
 def orionUrl = 'http://download.eclipse.org/orion/drops/R-11.0-201602232219/built-codeEdit.zip'

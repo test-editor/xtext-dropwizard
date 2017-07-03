@@ -26,6 +26,14 @@ nodeWithProperWorkspace {
             gradle 'clean assemble'
         }
     }
+
+    stage('Build example') {
+        dir('example') {
+            withGradleEnv {
+                gradle 'build'
+            }
+        }
+    }
     
     stage('Test') {
         withGradleEnv {

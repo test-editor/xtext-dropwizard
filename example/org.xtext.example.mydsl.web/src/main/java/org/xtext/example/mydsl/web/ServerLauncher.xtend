@@ -17,7 +17,20 @@ import org.eclipse.jetty.webapp.WebXmlConfiguration
  * Just execute it and point a web browser to http://localhost:8080/
  */
 class ServerLauncher {
+	
 	def static void main(String[] args) {
+		runBackendServer
+		runFrontendServer
+	}
+
+	def static void runBackendServer() {
+		new Thread([new MyDslApplication().run("server", "config.yml")]).start
+	}
+
+	/**
+	 * This is just a demo, we need this jetty to deliver the frontend only.
+	 */
+	def static void runFrontendServer() {
 		val server = new Server(new InetSocketAddress('localhost', 8080))
 		server.handler = new WebAppContext => [
 			resourceBase = 'src/main/webapp'

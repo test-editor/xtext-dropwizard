@@ -24,7 +24,9 @@
 			require(["xtext/xtext-orion"], function(xtext) {
 				xtext.createEditor({
 					baseUrl: baseUrl,
-					syntaxDefinition: "xtext-resources/generated/mydsl-syntax"
+					serviceUrl: 'http://localhost:8085/xtext-service',
+					syntaxDefinition: "xtext-resources/generated/mydsl-syntax",
+					sendFullText: true
 				});
 			});
 		});
@@ -37,7 +39,7 @@
 		<h1>Example MyDsl Web Editor</h1>
 	</div>
 	<div class="content">
-		<div id="xtext-editor" data-editor-xtext-lang="mydsl"></div>
+		<div id="xtext-editor" data-editor-xtext-lang="mydsl">Hello world!</div>
 	</div>
 </div>
 
