@@ -19,11 +19,15 @@ subprojects {
     apply plugin: 'org.xtext.xtend'
     apply plugin: 'eclipse'
     apply plugin: 'idea'
-
     
     group = 'org.testeditor.web'
     version = '1.0.0-SNAPSHOT'
-    
+
+    ext.versions = [
+        dropwizard: '1.1.0',
+        xtext: '2.12.0'
+    ]
+
     sourceCompatibility = '1.8'
     targetCompatibility = '1.8'
     
@@ -49,7 +53,7 @@ subprojects {
     }
 
 	dependencies {
-        compile 'org.eclipse.xtend:org.eclipse.xtend.lib:2.12.0'
+        compile 'org.eclipse.xtend:org.eclipse.xtend.lib:$versions.xtext'
     	testCompile 'junit:junit:4.12'
         testCompile 'org.mockito:mockito-core:2.7.22'
         testCompile 'de.xtendutils:junit:0.0.4'
