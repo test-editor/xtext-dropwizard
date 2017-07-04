@@ -3,6 +3,7 @@ generated/
 src-gen/
 xtend-gen/
 xtext-gen/
+**/MyDslServlet.xtend
 
 # Eclipse
 .classpath
