@@ -5,19 +5,24 @@ import com.google.inject.Module
 import com.hubspot.dropwizard.guice.GuiceBundle
 import io.dropwizard.Application
 import io.dropwizard.Configuration
+import io.dropwizard.auth.AuthValueFactoryProvider
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import java.util.EnumSet
 import java.util.List
 import javax.servlet.DispatcherType
 import org.eclipse.jetty.server.session.SessionHandler
-import org.eclipse.jetty.servlet.ServletHolder
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.eclipse.xtext.ISetup
+import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature
+import org.testeditor.web.dropwizard.auth.JWTAuthFilter
+import org.testeditor.web.dropwizard.auth.User
+
+import static org.eclipse.jetty.servlets.CrossOriginFilter.*
 
 abstract class XtextApplication<T extends Configuration> extends Application<T> {
 
-	@Inject XtextServiceServlet xtextServlet
+	@Inject JWTAuthFilter.Builder authFilterBuilder
 
 	override initialize(Bootstrap<T> bootstrap) {
 		super.initialize(bootstrap)
@@ -27,6 +32,7 @@ abstract class XtextApplication<T extends Configuration> extends Application<T> 
 	override run(T configuration, Environment environment) throws Exception {
 		configureXtextServices(configuration, environment)
 		configureCorsFilter(configuration, environment)
+		configureAuthFilter(configuration, environment)
 	}
 
 	/**
@@ -60,11 +66,8 @@ abstract class XtextApplication<T extends Configuration> extends Application<T> 
 	 * Adds the Xtext servlet and configures a session handler.
 	 */
 	protected def void configureXtextServices(T configuration, Environment environment) {
-		environment.applicationContext => [
-			xtextServlet.languageSetups += languageSetups
-			val servletHolder = new ServletHolder(xtextServlet)
-			addServlet(servletHolder, "/xtext-service/*")
-		]
+		languageSetups.forEach[createInjectorAndDoEMFRegistration]
+		environment.jersey.register(XtextServiceResource)
 		environment.servlets.sessionHandler = new SessionHandler
 	}
 
@@ -73,12 +76,27 @@ abstract class XtextApplication<T extends Configuration> extends Application<T> 
 	protected def void configureCorsFilter(T configuration, Environment environment) {
 		environment.servlets.addFilter("CORS", CrossOriginFilter) => [
 			// Configure CORS parameters
-			setInitParameter("allowedOrigins", "*")
-			setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin")
-			setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD")
+			setInitParameter(ALLOWED_ORIGINS_PARAM, "*")
+			setInitParameter(ALLOWED_HEADERS_PARAM, "*")
+			setInitParameter(ALLOWED_METHODS_PARAM, "OPTIONS,GET,PUT,POST,DELETE,HEAD")
+			setInitParameter(ALLOW_CREDENTIALS_PARAM, "true")
 
 			// Add URL mapping
 			addMappingForUrlPatterns(EnumSet.allOf(DispatcherType), true, "/*")
+
+			// from https://stackoverflow.com/questions/25775364/enabling-cors-in-dropwizard-not-working
+			// DO NOT pass a preflight request to down-stream auth filters
+			// unauthenticated preflight requests should be permitted by spec
+			setInitParameter(CrossOriginFilter.CHAIN_PREFLIGHT_PARAM, "false");
+		]
+	}
+
+	protected def void configureAuthFilter(T configuration, Environment environment) {
+		val filter = authFilterBuilder.buildAuthFilter
+		environment.jersey => [
+			register(filter)
+			register(RolesAllowedDynamicFeature)
+			register(new AuthValueFactoryProvider.Binder(User))
 		]
 	}
 
