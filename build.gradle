@@ -57,7 +57,7 @@ subprojects {
  * Remove tasks "updateVersion" and "commitNewVersion" as we don't want the new SNAPSHOT
  * version commit on the master branch.
  */
-tasks.release.tasks -= ["updateVersion", "commitNewVersion"]
+tasks.release.tasks -= [":updateVersion", ":commitNewVersion"]
 release {
     preTagCommitMessage = '[release]'
     tagCommitMessage = '[release]'
