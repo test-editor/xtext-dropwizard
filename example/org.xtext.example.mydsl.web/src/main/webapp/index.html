@@ -23,9 +23,17 @@
 		});
 		require(["orion/code_edit/built-codeEdit-amd"], function() {
 			require([
+				"jquery",
 				"xtext/xtext-orion",
 				"xtext/services/XtextService"
-			], function(xtext, xtextService) {
+			], function(jquery, xtext, xtextService) {
+
+				/* Send the session credentials also cross-domain. */
+				jquery.ajaxSetup({
+				  xhrFields: {
+				    withCredentials: true
+				  }
+				});
 
 				/* Dummy authorization for now... */
 				xtextService.prototype._sendRequest = xtextService.prototype.sendRequest;
@@ -39,8 +47,7 @@
 				xtext.createEditor({
 					baseUrl: baseUrl,
 					serviceUrl: 'http://localhost:8085/xtext-service',
-					syntaxDefinition: "xtext-resources/generated/mydsl-syntax",
-					sendFullText: true
+					syntaxDefinition: "xtext-resources/generated/mydsl-syntax"
 				});
 			});
 		});

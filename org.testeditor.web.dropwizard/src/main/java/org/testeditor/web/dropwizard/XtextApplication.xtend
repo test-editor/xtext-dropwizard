@@ -79,6 +79,7 @@ abstract class XtextApplication<T extends Configuration> extends Application<T> 
 			setInitParameter(ALLOWED_ORIGINS_PARAM, "*")
 			setInitParameter(ALLOWED_HEADERS_PARAM, "*")
 			setInitParameter(ALLOWED_METHODS_PARAM, "OPTIONS,GET,PUT,POST,DELETE,HEAD")
+			setInitParameter(ALLOW_CREDENTIALS_PARAM, "true")
 
 			// Add URL mapping
 			addMappingForUrlPatterns(EnumSet.allOf(DispatcherType), true, "/*")
@@ -86,7 +87,7 @@ abstract class XtextApplication<T extends Configuration> extends Application<T> 
 			// from https://stackoverflow.com/questions/25775364/enabling-cors-in-dropwizard-not-working
 			// DO NOT pass a preflight request to down-stream auth filters
 			// unauthenticated preflight requests should be permitted by spec
-			setInitParameter(CrossOriginFilter.CHAIN_PREFLIGHT_PARAM, Boolean.FALSE.toString());
+			setInitParameter(CrossOriginFilter.CHAIN_PREFLIGHT_PARAM, "false");
 		]
 	}
 
