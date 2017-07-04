@@ -24,9 +24,9 @@ subprojects {
     apply plugin: 'org.xtext.xtend'
     apply plugin: 'eclipse'
     apply plugin: 'idea'
+    apply plugin: 'maven'
     
     group = 'org.testeditor.web'
-    version = '1.0.0-SNAPSHOT'
 
     ext.versions = [
         dropwizard: '1.1.0',
