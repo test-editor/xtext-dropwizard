@@ -7,6 +7,11 @@ buildscript {
     }
 }
 
+plugins {
+    id 'net.researchgate.release' version '2.6.0'
+    id 'com.jfrog.bintray' version '1.7.3'
+}
+
 subprojects {
     repositories {
         jcenter()
@@ -31,31 +36,37 @@ subprojects {
     sourceCompatibility = '1.8'
     targetCompatibility = '1.8'
     
+    apply from: "$rootDir/gradle/publishing.gradle"
+
 	sourceSets {
   		main.xtendOutputDir = 'src/main/xtend-gen'
   		test.xtendOutputDir = 'src/test/xtend-gen'
 	}
 
-    jar {
-        manifest {
-            attributes 'Implementation-Title': "${project.group}.${project.name}",
-                    'Implementation-Version': project.version
-        }
-    }
-
-    task sourcesJar(type: Jar, dependsOn: classes) {
-        classifier 'sources'
-        from sourceSets.main.allSource
-    }
-
-    artifacts {
-        archives sourcesJar
-    }
-
-	dependencies {
+    dependencies {
         compile 'org.eclipse.xtend:org.eclipse.xtend.lib:$versions.xtext'
     	testCompile 'junit:junit:4.12'
         testCompile 'org.mockito:mockito-core:2.7.22'
         testCompile 'de.xtendutils:junit:0.0.4'
     }
+   
+}
+
+/*
+ * Configure release plugin.
+ * Remove tasks "updateVersion" and "commitNewVersion" as we don't want the new SNAPSHOT
+ * version commit on the master branch.
+ */
+tasks.release.tasks -= ["updateVersion", "commitNewVersion"]
+release {
+    preTagCommitMessage = '[release]'
+    tagCommitMessage = '[release]'
+    newVersionCommitMessage = '[release] new version'
+    tagTemplate = 'v${version}'
+}
+
+afterReleaseBuild.dependsOn bintrayUpload
+
+task build {
+    dependsOn = subprojects.collect{it.tasks['build']}
 }
