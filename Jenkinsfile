@@ -16,9 +16,9 @@ nodeWithProperWorkspace {
         }
     }
     
-    if (isMaster() && !lastCommitByJenkins()) {
+    if (isMaster() && lastCommitByJenkins()) {
         // Workaround: we don't want infinite releases.
-        echo "Aborting build as the current commit on master is already tagged."
+        echo "Aborting build as the current commit was done by $JENKINS_NAME"
         currentBuild.displayName = "checkout-only"
         return
     }
