@@ -1,4 +1,6 @@
 #!groovy
+JENKINS_NAME = "jenkins"
+
 nodeWithProperWorkspace {
 
     stage('Checkout') {
@@ -14,7 +16,7 @@ nodeWithProperWorkspace {
         }
     }
     
-    if (isMaster() && localIsVersionTag()) {
+    if (isMaster() && !lastCommitByJenkins()) {
         // Workaround: we don't want infinite releases.
         echo "Aborting build as the current commit on master is already tagged."
         currentBuild.displayName = "checkout-only"
@@ -46,7 +48,7 @@ nodeWithProperWorkspace {
             currentBuild.displayName = getVersion().replaceAll('-SNAPSHOT', '')
             withGradleEnv {
                 sh 'git config user.email "jenkins@ci.testeditor.org"'
-                sh 'git config user.name "jenkins"'
+                sh "git config user.name \"$JENKINS_NAME\""
                 // workaround: cannot push without credentials using HTTPS => push using SSH
                 sh "git remote set-url origin ${getGithubUrlAsSsh()}"
                 withCredentials([[$class: 'UsernamePasswordMultiBinding', credentialsId: '1e68e4c1-48a6-428c-8896-42511359493e', passwordVariable: 'BINTRAY_KEY', usernameVariable: 'BINTRAY_USER']]) {
@@ -54,16 +56,25 @@ nodeWithProperWorkspace {
                 }
             }
             
-            // TODO merge back to develop
+            // merge back to develop
+            withGradleEnv {
+                sh 'git checkout develop'
+                sh 'git reset --hard origin/develop'
+                sh 'git merge master'
+                gradle 'updateVersion -Prelease.useAutomaticVersion=true'
+                sh 'git add gradle.properties'
+                sh 'git commit -m "[release] new version"'
+                sh 'git push'
+            }
         }
     }
 
 }
 
-String localIsVersionTag() {
-    def versionPattern = /v\d+.\d+(.\d+)?(\^0)?/
-    def tag = bash('git name-rev --name-only --tags HEAD~1').trim()
-    return tag ==~ versionPattern
+boolean lastCommitByJenkins() {
+    def lastCommitAuthor = bash('git log -1 --pretty="%an"').trim()
+    println "Last commit by: $lastCommitAuthor"
+    return lastCommitAuthor == JENKINS_NAME
 }
 
 String getVersion() {
