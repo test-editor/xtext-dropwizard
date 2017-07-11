@@ -1,4 +1,4 @@
-package org.testeditor.web.dropwizard
+package org.testeditor.web.dropwizard.xtext
 
 import java.util.Map
 import javax.servlet.http.HttpServletRequest

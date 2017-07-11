@@ -1,0 +1,4 @@
+dependencies {
+    compile project(':org.testeditor.web.dropwizard')
+    compile "org.eclipse.xtext:org.eclipse.xtext.web.servlet:$versions.xtext"
+}
