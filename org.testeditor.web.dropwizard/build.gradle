@@ -1,14 +1,8 @@
 dependencies {
-    // Xtext
-    compile "org.eclipse.xtext:org.eclipse.xtext.web.servlet:$versions.xtext"
-
-    // Dropwizard and backened
+    // Dropwizard and backend
     compile "io.dropwizard:dropwizard-core:$versions.dropwizard"
     compile "io.dropwizard:dropwizard-auth:$versions.dropwizard"
-    compile "io.jsonwebtoken:jjwt:0.7.0"
+//  compile "io.jsonwebtoken:jjwt:0.7.0"
     compile "com.hubspot.dropwizard:dropwizard-guice:1.0.6.0"
     compile "org.eclipse.jetty:jetty-annotations:9.3.8.v20160314"
-
-    // Misc
-    compile "org.eclipse.jgit:org.eclipse.jgit:4.7.0.201704051617-r"
 }

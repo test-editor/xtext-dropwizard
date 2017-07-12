@@ -1,4 +1,4 @@
-package org.testeditor.web.dropwizard
+package org.testeditor.web.dropwizard.xtext
 
 import com.google.inject.Injector
 import javax.servlet.http.HttpServletRequest

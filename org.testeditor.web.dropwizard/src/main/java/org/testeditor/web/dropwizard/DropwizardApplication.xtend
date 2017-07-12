@@ -9,18 +9,15 @@ import io.dropwizard.auth.AuthValueFactoryProvider
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import java.util.EnumSet
-import java.util.List
 import javax.servlet.DispatcherType
-import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.jetty.servlets.CrossOriginFilter
-import org.eclipse.xtext.ISetup
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature
 import org.testeditor.web.dropwizard.auth.JWTAuthFilter
 import org.testeditor.web.dropwizard.auth.User
 
 import static org.eclipse.jetty.servlets.CrossOriginFilter.*
 
-abstract class XtextApplication<T extends Configuration> extends Application<T> {
+abstract class DropwizardApplication<T extends Configuration> extends Application<T> {
 
 	@Inject JWTAuthFilter.Builder authFilterBuilder
 
@@ -30,7 +27,6 @@ abstract class XtextApplication<T extends Configuration> extends Application<T> 
 	}
 
 	override run(T configuration, Environment environment) throws Exception {
-		configureXtextServices(configuration, environment)
 		configureCorsFilter(configuration, environment)
 		configureAuthFilter(configuration, environment)
 	}
@@ -61,17 +57,6 @@ abstract class XtextApplication<T extends Configuration> extends Application<T> 
 	protected def Iterable<Module> getModules() {
 		return newLinkedList([]) // initialize with empty module, Guice
 	}
-
-	/**
-	 * Adds the Xtext servlet and configures a session handler.
-	 */
-	protected def void configureXtextServices(T configuration, Environment environment) {
-		languageSetups.forEach[createInjectorAndDoEMFRegistration]
-		environment.jersey.register(XtextServiceResource)
-		environment.servlets.sessionHandler = new SessionHandler
-	}
-
-	abstract protected def List<ISetup> getLanguageSetups()
 
 	protected def void configureCorsFilter(T configuration, Environment environment) {
 		environment.servlets.addFilter("CORS", CrossOriginFilter) => [
