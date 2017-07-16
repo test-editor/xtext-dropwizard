@@ -41,6 +41,9 @@ nodeWithProperWorkspace {
         withGradleEnv {
             gradle 'build'
         }
+        if(isMaster() || isDevelop() || true) {
+            gradle dependencyCheckAnalyze --info
+        }
     }
 
     if (isMaster()) {
