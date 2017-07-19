@@ -1,7 +1,7 @@
 package org.xtext.example.mydsl.web
 
 import javax.inject.Inject
-import org.testeditor.web.dropwizard.XtextApplication
+import org.testeditor.web.dropwizard.xtext.XtextApplication
 
 class MyDslApplication extends XtextApplication<MyDslConfiguration> {
 

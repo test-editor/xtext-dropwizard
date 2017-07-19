@@ -1,3 +1,4 @@
 rootProject.name = 'xtext-dropwizard'
 
 include ':org.testeditor.web.dropwizard'
+include ':org.testeditor.web.dropwizard.xtext'
