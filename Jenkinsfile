@@ -46,6 +46,7 @@ nodeWithProperWorkspace {
         }
     }
 
+
     if (isMaster()) {
         stage('Release') {
             currentBuild.displayName = getVersion().replaceAll('-SNAPSHOT', '')
