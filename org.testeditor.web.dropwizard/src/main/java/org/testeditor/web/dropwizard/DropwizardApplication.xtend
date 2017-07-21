@@ -2,6 +2,7 @@ package org.testeditor.web.dropwizard
 
 import com.google.inject.Inject
 import com.google.inject.Module
+import com.google.inject.util.Modules
 import com.hubspot.dropwizard.guice.GuiceBundle
 import io.dropwizard.Application
 import io.dropwizard.Configuration
@@ -48,6 +49,7 @@ abstract class DropwizardApplication<T extends Configuration> extends Applicatio
 		for (module : modules) {
 			builder.addModule(module)
 		}
+		builder.configClass = configurationClass
 		return builder.build
 	}
 
@@ -55,7 +57,7 @@ abstract class DropwizardApplication<T extends Configuration> extends Applicatio
 	 * Add your modules here.
 	 */
 	protected def Iterable<Module> getModules() {
-		return newLinkedList([]) // initialize with empty module, Guice
+		return newLinkedList(Modules.EMPTY_MODULE) // initialize with empty module
 	}
 
 	protected def void configureCorsFilter(T configuration, Environment environment) {
