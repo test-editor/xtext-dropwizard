@@ -2,7 +2,7 @@ package org.testeditor.web.dropwizard
 
 import com.google.inject.Inject
 import com.google.inject.Module
-import com.google.inject.util.Modules
+import com.google.inject.servlet.ServletScopes
 import com.hubspot.dropwizard.guice.GuiceBundle
 import io.dropwizard.Application
 import io.dropwizard.Configuration
@@ -15,6 +15,7 @@ import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature
 import org.testeditor.web.dropwizard.auth.JWTAuthFilter
 import org.testeditor.web.dropwizard.auth.User
+import org.testeditor.web.dropwizard.auth.UserProvider
 
 import static org.eclipse.jetty.servlets.CrossOriginFilter.*
 
@@ -57,7 +58,10 @@ abstract class DropwizardApplication<T extends Configuration> extends Applicatio
 	 * Add your modules here.
 	 */
 	protected def Iterable<Module> getModules() {
-		return newLinkedList(Modules.EMPTY_MODULE) // initialize with empty module
+		val Module userModule = [ binder |
+			binder.bind(User).toProvider(UserProvider).in(ServletScopes.REQUEST)
+		]
+		return newLinkedList(userModule)
 	}
 
 	protected def void configureCorsFilter(T configuration, Environment environment) {

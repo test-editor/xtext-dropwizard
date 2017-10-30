@@ -30,9 +30,3 @@ bintray {
         licenses = ['EPL-1.0']
     }
 }
-
-bintrayUpload.doFirst {
-    // Version is changed during release, we need to set the proper version right before uploading
-    versionName = "$project.version"
-    versionVcsTag = "v$project.version"
-}
