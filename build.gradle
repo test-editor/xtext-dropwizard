@@ -29,8 +29,8 @@ subprojects {
     group = 'org.testeditor.web'
 
     ext.versions = [
-        dropwizard: '1.1.0',
-        xtext: '2.12.0'
+        dropwizard: '1.2.0',
+        xtext: '2.13.0'
     ]
 
     sourceCompatibility = '1.8'
