@@ -1,0 +1,9 @@
+dependencies {
+    compile "io.dropwizard:dropwizard-core:$versions.dropwizard"
+    compile 'com.auth0:java-jwt:3.2.0'
+    
+    compile 'junit:junit:4.12'
+    compile 'org.mockito:mockito-core:2.7.22'
+    compile 'de.xtendutils:junit:0.0.4'
+    compile "io.dropwizard:dropwizard-testing:$versions.dropwizard"
+}

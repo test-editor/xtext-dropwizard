@@ -2,37 +2,42 @@ package org.testeditor.web.dropwizard
 
 import org.junit.Test
 import org.testeditor.web.dropwizard.auth.User
+import org.testeditor.web.dropwizard.testing.AbstractDropwizardIntegrationTest
 
 import static javax.ws.rs.core.Response.Status.*
 
-class ExampleApplicationIntegrationTest extends AbstractIntegrationTest {
+class ExampleApplicationIntegrationTest extends AbstractDropwizardIntegrationTest<ExampleConfiguration> {
 
-    @Test
-    def void canAccessHelloWorldResource() {
-        // given
-        val request = createRequest('helloworld').buildGet
+	override protected getApplicationClass() {
+		return ExampleApplication
+	}
 
-        // when
-        val response = request.submit.get
+	@Test
+	def void canAccessHelloWorldResource() {
+		// given
+		val request = createRequest('helloworld').buildGet
 
-        // then
-        response.status.assertEquals(OK.statusCode)
-    }
+		// when
+		val response = request.submit.get
 
-    @Test
-    def void retrievesCorrectUser() {
-        // given
-        val request = createRequest('user').buildGet
+		// then
+		response.status.assertEquals(OK.statusCode)
+	}
 
-        // when
-        val response = request.submit.get
+	@Test
+	def void retrievesCorrectUser() {
+		// given
+		val request = createRequest('user').buildGet
 
-        // then
-        response.status.assertEquals(OK.statusCode)
-        val user = response.readEntity(User)
-        user.id.assertEquals('johndoe')
-        user.name.assertEquals('John Doe')
-        user.email.assertEquals('john@example.org')
-    }
+		// when
+		val response = request.submit.get
+
+		// then
+		response.status.assertEquals(OK.statusCode)
+		val user = response.readEntity(User)
+		user.id.assertEquals('johndoe')
+		user.name.assertEquals('John Doe')
+		user.email.assertEquals('john@example.org')
+	}
 
 }

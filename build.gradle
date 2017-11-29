@@ -45,10 +45,8 @@ subprojects {
 
     dependencies {
         compile "org.eclipse.xtend:org.eclipse.xtend.lib:$versions.xtext"
-        testCompile 'junit:junit:4.12'
-        testCompile 'org.mockito:mockito-core:2.7.22'
-        testCompile 'de.xtendutils:junit:0.0.4'
-        testCompile "io.dropwizard:dropwizard-testing:$versions.dropwizard"
+        // use newer Guice version (4.1 instead of 4.0)
+        compile "com.google.inject:guice:4.1.0"
     }
    
 }

@@ -5,7 +5,7 @@ dependencies {
     compile 'com.auth0:java-jwt:3.2.0'
     compile "com.hubspot.dropwizard:dropwizard-guice:1.0.6.0"
     compile "org.eclipse.jetty:jetty-annotations:9.3.8.v20160314"
-    // use newer Guice version (4.1 instead of 4.0)
-    compile "com.google.inject:guice:4.1.0"
     compile 'com.google.inject.extensions:guice-servlet:4.1.0'
+    
+    testCompile project(':org.testeditor.web.dropwizard.testing')
 }
