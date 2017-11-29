@@ -17,7 +17,9 @@ dependencies {
 	// Dependencies on the org.testeditor.web.dropwizard project
 	compile "org.testeditor.web:org.testeditor.web.dropwizard:1.0.0"
 	compile "org.testeditor.web:org.testeditor.web.dropwizard.xtext:1.0.0"
+	testCompile "org.testeditor.web:org.testeditor.web.dropwizard.testing:1.0.0"
 }
+
 def orionDir = file('src/main/webapp/orion')
 def orionUrl = 'http://download.eclipse.org/orion/drops/R-11.0-201602232219/built-codeEdit.zip'
 

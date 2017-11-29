@@ -3,9 +3,7 @@
  */
 package org.xtext.example.mydsl.web
 
-import com.google.inject.Injector
-import javax.inject.Inject
-import org.eclipse.xtext.util.Modules2
+import com.google.inject.Guice
 import org.xtext.example.mydsl.MyDslRuntimeModule
 import org.xtext.example.mydsl.MyDslStandaloneSetup
 import org.xtext.example.mydsl.ide.MyDslIdeModule
@@ -15,10 +13,8 @@ import org.xtext.example.mydsl.ide.MyDslIdeModule
  */
 class MyDslWebSetup extends MyDslStandaloneSetup {
 
-	@Inject Injector parentInjector
-
-	override Injector createInjector() {
-		return parentInjector.createChildInjector(Modules2.mixin(new MyDslRuntimeModule, new MyDslIdeModule, new MyDslWebModule))
+	override createInjector() {
+		return Guice.createInjector(new MyDslRuntimeModule, new MyDslIdeModule, new MyDslWebModule)
 	}
-	
+
 }
