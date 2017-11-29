@@ -65,17 +65,13 @@ abstract class DropwizardApplication<T extends Configuration> extends Applicatio
 	}
 
 	/**
-	 * Copied from org.eclipse.xtext.util.Modules2
+	 * Inspired by org.eclipse.xtext.util.Modules2
 	 */
 	protected static def Module mixin(Module... modules) {
-		if (modules.length == 0) {
-			return Modules.EMPTY_MODULE
-		}
-		var current = modules.get(0)
-		for (var i = 1; i < modules.length; i++) {
-			current = Modules.override(current).with(modules.get(i))
-		}
-		return current
+		val seed = Modules.EMPTY_MODULE
+		return modules.fold(seed, [ current, module |
+			return Modules.override(current).with(module)
+		])
 	}
 
 	protected def void configureCorsFilter(T configuration, Environment environment) {
