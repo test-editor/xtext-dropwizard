@@ -3,6 +3,7 @@ package org.testeditor.web.dropwizard
 import com.google.inject.Inject
 import com.google.inject.Module
 import com.google.inject.servlet.ServletScopes
+import com.google.inject.util.Modules
 import com.hubspot.dropwizard.guice.GuiceBundle
 import io.dropwizard.Application
 import io.dropwizard.Configuration
@@ -10,6 +11,7 @@ import io.dropwizard.auth.AuthValueFactoryProvider
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import java.util.EnumSet
+import java.util.List
 import javax.servlet.DispatcherType
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature
@@ -45,23 +47,31 @@ abstract class DropwizardApplication<T extends Configuration> extends Applicatio
 	}
 
 	protected def GuiceBundle<T> createGuiceBundle() {
-		val modules = modules
+		val modules = newLinkedList
+		collectModules(modules)
 		val builder = GuiceBundle.<T>newBuilder
-		for (module : modules) {
-			builder.addModule(module)
-		}
+		builder.addModule(mixin(modules))
 		builder.configClass = configurationClass
 		return builder.build
 	}
 
 	/**
-	 * Add your modules here.
+	 * Overwrite to add custom modules. Don't forget to call {@code super.collectModules(modules)}.
 	 */
-	protected def Iterable<Module> getModules() {
-		val Module userModule = [ binder |
+	protected def void collectModules(List<Module> modules) {
+		modules += [ binder |
 			binder.bind(User).toProvider(UserProvider).in(ServletScopes.REQUEST)
 		]
-		return newLinkedList(userModule)
+	}
+
+	/**
+	 * Inspired by org.eclipse.xtext.util.Modules2
+	 */
+	protected static def Module mixin(Module... modules) {
+		val seed = Modules.EMPTY_MODULE
+		return modules.fold(seed, [ current, module |
+			return Modules.override(current).with(module)
+		])
 	}
 
 	protected def void configureCorsFilter(T configuration, Environment environment) {

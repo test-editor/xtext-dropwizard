@@ -7,7 +7,6 @@ import de.undercouch.gradle.tasks.download.Download
 dependencies {
 	compile project(':org.xtext.example.mydsl')
 	compile project(':org.xtext.example.mydsl.ide')
-	compile "org.eclipse.xtext:org.eclipse.xtext.xbase.web:${xtextVersion}"
 	compile "org.eclipse.xtext:org.eclipse.xtext.web.servlet:${xtextVersion}"
 	compile "org.eclipse.xtend:org.eclipse.xtend.lib:${xtextVersion}"
 	compile "org.webjars:requirejs:2.3.2"
@@ -17,7 +16,9 @@ dependencies {
 	// Dependencies on the org.testeditor.web.dropwizard project
 	compile "org.testeditor.web:org.testeditor.web.dropwizard:1.0.0"
 	compile "org.testeditor.web:org.testeditor.web.dropwizard.xtext:1.0.0"
+	testCompile "org.testeditor.web:org.testeditor.web.dropwizard.testing:1.0.0"
 }
+
 def orionDir = file('src/main/webapp/orion')
 def orionUrl = 'http://download.eclipse.org/orion/drops/R-11.0-201602232219/built-codeEdit.zip'
 

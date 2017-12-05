@@ -8,33 +8,33 @@ import static org.junit.Assert.*
 
 class JWTAuthenticatorTest {
 
-    JWTAuthenticator authenticator = new JWTAuthenticator
+	val authenticator = new JWTAuthenticator
 
-    static def String createToken() {
-        val builder = JWT.create => [
-            withClaim('id', 'johndoe')
-            withClaim('name', 'John Doe')
-            withClaim('email', 'john@example.org')
-        ]
-        return builder.sign(Algorithm.HMAC256("secret"))
-    }
+	private def String createToken() {
+		val builder = JWT.create => [
+			withClaim('id', 'johndoe')
+			withClaim('name', 'John Doe')
+			withClaim('email', 'john@example.org')
+		]
+		return builder.sign(Algorithm.HMAC256("secret"))
+	}
 
-    @Test
-    def void authenticateSimpleUser() {
-        // given
-        val jwt = createToken
-        val header = 'Bearer ' + jwt
+	@Test
+	def void authenticateSimpleUser() {
+		// given
+		val jwt = createToken
+		val header = 'Bearer ' + jwt
 
-        // when
-        val user = authenticator.authenticate(header)
+		// when
+		val user = authenticator.authenticate(header)
 
-        // then
-        assertTrue(user.isPresent)
-        user.get => [
-            assertEquals("johndoe", id)
-            assertEquals("John Doe", name)
-            assertEquals("john@example.org", email)
-        ]
-    }
+		// then
+		assertTrue(user.isPresent)
+		user.get => [
+			assertEquals("johndoe", id)
+			assertEquals("John Doe", name)
+			assertEquals("john@example.org", email)
+		]
+	}
 
 }
