@@ -21,8 +21,7 @@ class XtextIndex extends ResourceSetBasedResourceDescriptions {
 
 	static val logger = LoggerFactory.getLogger(XtextIndex)
 
-	@Inject
-	IResourceDescription.Manager resourceDescriptionManager
+	@Inject IResourceDescription.Manager resourceDescriptionManager
 	ResourceDescriptionsData data
 
 	@Inject
