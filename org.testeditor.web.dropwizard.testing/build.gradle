@@ -6,4 +6,6 @@ dependencies {
     compile 'org.mockito:mockito-core:2.7.22'
     compile 'de.xtendutils:junit:0.0.4'
     compile "io.dropwizard:dropwizard-testing:$versions.dropwizard"
+    
+    compile "org.eclipse.jgit:org.eclipse.jgit:4.7.0.201704051617-r"
 }
