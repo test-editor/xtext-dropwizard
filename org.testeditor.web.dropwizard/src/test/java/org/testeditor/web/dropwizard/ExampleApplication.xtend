@@ -7,6 +7,8 @@ import javax.ws.rs.Path
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
+import org.testeditor.web.dropwizard.auth.ApiTokenAuth
+import org.testeditor.web.dropwizard.auth.NoAuth
 import org.testeditor.web.dropwizard.auth.User
 
 import static javax.ws.rs.core.Response.Status.*
@@ -14,36 +16,75 @@ import static javax.ws.rs.core.Response.status
 
 class ExampleApplication extends DropwizardApplication<ExampleConfiguration> {
 
-    override run(ExampleConfiguration configuration, Environment environment) throws Exception {
-        super.run(configuration, environment)
-        environment.jersey => [
-            register(HelloWorldResource)
-            register(UserResource)
-        ]
-    }
+	override run(ExampleConfiguration configuration, Environment environment) throws Exception {
+		super.run(configuration, environment)
+		environment.jersey => [
+			register(RestrictedByDefaultResource)
+			register(ApiTokenRestrictedByDefaultResource)
+			register(NoAuthResource)
+			register(NoAuthOnMethodResource)
+			register(UserResource)
+		]
+	}
 
-    @Path("/helloworld")
-    @Produces(MediaType.TEXT_PLAIN)
-    public static class HelloWorldResource {
+	@NoAuth
+	@Path("/noauth-on-class")
+	@Produces(MediaType.TEXT_PLAIN)
+	public static class NoAuthResource {
 
-        @GET
-        def Response load() {
-            return status(OK).entity("Hello, world!").build
-        }
+		@GET
+		def Response load() {
+			return status(OK).entity("Hello, universe!").build
+		}
 
-    }
+	}
 
-    @Path("/user")
-    @Produces(MediaType.APPLICATION_JSON)
-    public static class UserResource {
+	@Path("/noauth-on-method")
+	@Produces(MediaType.TEXT_PLAIN)
+	public static class NoAuthOnMethodResource {
 
-        @Inject User user
+		@NoAuth
+		@GET
+		def Response load() {
+			return status(OK).entity("Hello, milkyway!").build
+		}
 
-        @GET
-        def User get() {
-            return user
-        }
+	}
 
-    }
+	@Path("/protected-resource")
+	@Produces(MediaType.TEXT_PLAIN)
+	public static class RestrictedByDefaultResource {
+
+		@GET
+		def Response load() {
+			return status(OK).entity("Hello, world!").build
+		}
+
+	}
+
+	@Path("/api-token-protected-resource")
+	@Produces(MediaType.TEXT_PLAIN)
+	public static class ApiTokenRestrictedByDefaultResource {
+
+		@GET
+		@ApiTokenAuth
+		def Response load() {
+			return status(OK).entity("Hello, world!").build
+		}
+
+	}
+
+	@Path("/user")
+	@Produces(MediaType.APPLICATION_JSON)
+	public static class UserResource {
+
+		@Inject User user
+
+		@GET
+		def User get() {
+			return user
+		}
+
+	}
 
 }

@@ -6,7 +6,6 @@ import com.google.inject.servlet.ServletScopes
 import com.google.inject.util.Modules
 import com.hubspot.dropwizard.guice.GuiceBundle
 import io.dropwizard.Application
-import io.dropwizard.Configuration
 import io.dropwizard.auth.AuthValueFactoryProvider
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
@@ -15,15 +14,15 @@ import java.util.List
 import javax.servlet.DispatcherType
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature
-import org.testeditor.web.dropwizard.auth.JWTAuthFilter
+import org.testeditor.web.dropwizard.auth.DefaultAuthDynamicFeature
 import org.testeditor.web.dropwizard.auth.User
 import org.testeditor.web.dropwizard.auth.UserProvider
 
 import static org.eclipse.jetty.servlets.CrossOriginFilter.*
 
-abstract class DropwizardApplication<T extends Configuration> extends Application<T> {
+abstract class DropwizardApplication<T extends DropwizardApplicationConfiguration> extends Application<T> {
 
-	@Inject JWTAuthFilter.Builder authFilterBuilder
+	@Inject DefaultAuthDynamicFeature authFilter
 
 	override initialize(Bootstrap<T> bootstrap) {
 		super.initialize(bootstrap)
@@ -93,9 +92,8 @@ abstract class DropwizardApplication<T extends Configuration> extends Applicatio
 	}
 
 	protected def void configureAuthFilter(T configuration, Environment environment) {
-		val filter = authFilterBuilder.buildAuthFilter
 		environment.jersey => [
-			register(filter)
+			register(authFilter.withConfiguration(configuration))
 			register(RolesAllowedDynamicFeature)
 			register(new AuthValueFactoryProvider.Binder(User))
 		]
