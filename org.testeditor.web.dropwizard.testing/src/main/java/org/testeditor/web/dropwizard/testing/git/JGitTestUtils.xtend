@@ -1,8 +1,6 @@
-package org.testeditor.web.dropwizard.testing
+package org.testeditor.web.dropwizard.testing.git
 
-import com.google.common.io.Files
 import de.xtendutils.junit.AssertionHelper
-import java.io.File
 import java.util.List
 import javax.inject.Inject
 import org.eclipse.jgit.api.Git
@@ -14,9 +12,6 @@ import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.util.io.DisabledOutputStream
-import org.junit.rules.TemporaryFolder
-
-import static java.nio.charset.StandardCharsets.UTF_8
 
 class JGitTestUtils {
 
@@ -66,26 +61,9 @@ class JGitTestUtils {
 		}
 	}
 
-	def void assertFileExists(File parent, String path) {
-		val file = new File(parent, path)
-		file.exists.assertTrue('''Expected file does not exist: «file.absolutePath»''')
-	}
-
-	def void assertFileDoesNotExist(File parent, String path) {
-		val file = new File(parent, path)
-		file.exists.assertFalse('''Unexpected file found: «file.absolutePath»''')
-	}
-
-	def void write(TemporaryFolder targetDir, String path, String fileContents) {
-		Files.createParentDirs(new File(targetDir.root, path))
-		val file = targetDir.newFile(path)
-		Files.asCharSink(file, UTF_8).write(fileContents)
-	}
-
-	def String addAndCommit(Git git, String path, String message) {
+	def RevCommit addAndCommit(Git git, String path, String message) {
 		git.add.addFilepattern(path).call
-		git.commit.setMessage(message).call
-		return path
+		return git.commit.setMessage(message).call
 	}
 
 }
