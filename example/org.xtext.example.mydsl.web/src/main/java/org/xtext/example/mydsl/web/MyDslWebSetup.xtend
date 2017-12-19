@@ -4,6 +4,9 @@
 package org.xtext.example.mydsl.web
 
 import com.google.inject.Guice
+import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
+import org.eclipse.xtext.util.Modules2
+import org.testeditor.web.xtext.index.XtextIndexModule
 import org.xtext.example.mydsl.MyDslRuntimeModule
 import org.xtext.example.mydsl.MyDslStandaloneSetup
 import org.xtext.example.mydsl.ide.MyDslIdeModule
@@ -11,10 +14,15 @@ import org.xtext.example.mydsl.ide.MyDslIdeModule
 /**
  * Initialization support for running Xtext languages in web applications.
  */
+@FinalFieldsConstructor
 class MyDslWebSetup extends MyDslStandaloneSetup {
 
+	val XtextIndexModule indexModule
+
 	override createInjector() {
-		return Guice.createInjector(new MyDslRuntimeModule, new MyDslIdeModule, new MyDslWebModule)
+		val modules = #[new MyDslRuntimeModule, new MyDslIdeModule, new MyDslWebModule, indexModule]
+		val injectorModule = Modules2.mixin(modules)
+		return Guice.createInjector(injectorModule)
 	}
 
 }
