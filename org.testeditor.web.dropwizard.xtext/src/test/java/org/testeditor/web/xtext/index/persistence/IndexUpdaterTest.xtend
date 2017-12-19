@@ -77,7 +77,42 @@ class IndexUpdaterTest extends AbstractTestWithExampleLanguage {
 		]
 		verifyNoMoreInteractions(index)
 	}
-	
+
+	@Test
+	def void ignoresCopyUpdateIfNewPathIsNotRelevant() {
+		// given
+		val diffs = #[
+			mockDiffEntry(COPY, 'irrelevant.txt', 'theNewCopy.mydsl')
+		]
+		val root = new File('some/root')
+
+		// when
+		indexUpdater.updateIndex(root, diffs)
+
+		// then
+		verifyZeroInteractions(index)
+	}
+
+	@Test
+	def void handlesRenamingCorrectlyIfOnlyOnePathIsRelevant() {
+		// given
+		val diffs = #[
+			mockDiffEntry(RENAME, 'nowRelevant.mydsl', 'example.txt'),
+			mockDiffEntry(RENAME, 'nowIrrelevant.txt', 'formerlyRelevant.mydsl')
+		]
+		val root = new File('some/root')
+
+		// when
+		indexUpdater.updateIndex(root, diffs)
+
+		// then
+		inOrder(index) => [
+			verify(index).add(toAbsoluteFileUri(root, 'nowRelevant.mydsl'))
+			verify(index).remove(toAbsoluteFileUri(root, 'formerlyRelevant.mydsl'))
+		]
+		verifyNoMoreInteractions(index)
+	}
+
 	private def URI toAbsoluteFileUri(File root, String relative) {
 		return (new File(root, relative)).absolutePath.createFileURI
 	}

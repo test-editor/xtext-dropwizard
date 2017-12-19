@@ -70,7 +70,11 @@ class IndexUpdater {
 				index.add(getAbsoluteFileURI(root, diff.newPath))
 			}
 			case COPY: {
-				index.add(getAbsoluteFileURI(root, diff.newPath))
+				if (isRelevantForIndex(diff.newPath)) {
+					index.add(getAbsoluteFileURI(root, diff.newPath))
+				} else {
+					logger.debug("Skipping index update for irrelevant diff='{}'.", diff)
+				}
 			}
 			case DELETE: {
 				index.remove(getAbsoluteFileURI(root, diff.oldPath))
@@ -79,8 +83,12 @@ class IndexUpdater {
 				index.update(getAbsoluteFileURI(root, diff.oldPath))
 			}
 			case RENAME: {
-				index.remove(getAbsoluteFileURI(root, diff.oldPath))
-				index.add(getAbsoluteFileURI(root, diff.newPath))
+				if (isRelevantForIndex(diff.oldPath)) {
+					index.remove(getAbsoluteFileURI(root, diff.oldPath))
+				}
+				if (isRelevantForIndex(diff.newPath)) {
+					index.add(getAbsoluteFileURI(root, diff.newPath))
+				}
 			}
 			default: {
 				throw new RuntimeException('''Unknown Git diff change type='«diff.changeType.name»'.''')
