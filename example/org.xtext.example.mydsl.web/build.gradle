@@ -17,6 +17,7 @@ dependencies {
 	compile "org.testeditor.web:org.testeditor.web.dropwizard:1.0.0"
 	compile "org.testeditor.web:org.testeditor.web.dropwizard.xtext:1.0.0"
 	testCompile "org.testeditor.web:org.testeditor.web.dropwizard.testing:1.0.0"
+	testCompile "org.testeditor.web:org.testeditor.web.dropwizard.xtext.testing:1.0.0"
 }
 
 def orionDir = file('src/main/webapp/orion')
