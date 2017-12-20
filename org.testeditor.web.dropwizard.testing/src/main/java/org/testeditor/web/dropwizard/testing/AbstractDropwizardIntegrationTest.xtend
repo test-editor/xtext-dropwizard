@@ -54,10 +54,24 @@ abstract class AbstractDropwizardIntegrationTest<C extends Configuration> {
 	}
 
 	protected def Builder createRequest(String relativePath) {
-		val uri = '''http://localhost:«dropwizardAppRule.localPort»/«relativePath»'''
-		val builder = client.target(uri).request
+		val builder = createRequestWithoutAuthorization(relativePath)
 		builder.header('Authorization', '''Bearer «token»''')
 		return builder
+	}
+
+	protected def Builder createRequestWithApiToken(String relativePath, String apiToken) {
+		val uri = '''«relativePath.createUri»?apiToken=«apiToken»'''
+		val builder = client.target(uri).request
+		return builder
+	}
+
+	protected def Builder createRequestWithoutAuthorization(String relativePath) {
+		val builder = client.target(relativePath.createUri).request
+		return builder
+	}
+	
+	protected def String createUri(String relativePath) {
+		return '''http://localhost:«dropwizardAppRule.localPort»/«relativePath»'''
 	}
 
 }

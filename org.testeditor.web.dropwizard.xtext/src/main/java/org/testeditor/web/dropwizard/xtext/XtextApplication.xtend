@@ -54,7 +54,7 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 		environment.servlets.sessionHandler = new SessionHandler
 		environment.jersey.register(XtextServiceResource)
 	}
-	
+
 	protected def void configureWebhooks(T configuration, Environment environment) {
 		environment.jersey.register(BitbucketWebhookResource)
 	}

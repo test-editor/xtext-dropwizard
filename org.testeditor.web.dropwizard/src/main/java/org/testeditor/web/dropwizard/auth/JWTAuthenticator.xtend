@@ -12,19 +12,25 @@ class JWTAuthenticator implements Authenticator<String, User> {
 
 	override authenticate(String authHeader) throws AuthenticationException {
 		val token = extractToken(authHeader)
-		val jwt = JWT.decode(token)
-		val user = createUser(jwt)
-		return Optional.of(user)
+		return token.map[extractUser]
 	}
 
-	private def String extractToken(String header) throws AuthenticationException {
+	private def Optional<String> extractToken(String header) {
 		if (header.startsWith(HEADER_PREFIX)) {
-			return header.substring(HEADER_PREFIX.length)
-		} else {
-			throw new AuthenticationException("Invalid authorization header.")
+			return Optional.of(header.substring(HEADER_PREFIX.length))
+		}
+		return Optional.empty
+	}
+
+	private def User extractUser(String token) throws AuthenticationException {
+		try {
+			val jwt = JWT.decode(token)
+			return createUser(jwt)
+		} catch (Exception e) {
+			throw new AuthenticationException("Invalid authorization header.", e)
 		}
 	}
-
+	
 	private def User createUser(DecodedJWT jwt) {
 		val id = jwt.getClaim('id').asString
 		val name = jwt.getClaim('name').asString
