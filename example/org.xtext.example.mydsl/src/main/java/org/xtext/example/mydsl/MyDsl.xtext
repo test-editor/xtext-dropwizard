@@ -4,6 +4,6 @@ generate myDsl "http://www.xtext.org/example/mydsl/MyDsl"
 
 Model:
     greetings+=Greeting*;
-    
+
 Greeting:
-    'Hello' name=ID '!';
+    'Hello' name=ID ('from' from=[Greeting])? '!';

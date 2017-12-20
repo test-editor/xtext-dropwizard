@@ -1,16 +1,22 @@
 package org.xtext.example.mydsl.web
 
 import org.junit.Test
-
 import static javax.ws.rs.core.Response.Status.*
+import org.eclipse.jgit.api.Git
+import java.io.File
 
-class MyDslApplicationIntegrationTest extends AbstractMyDslApplicationIntegrationTest {
+class MyDslIndexIntegrationTest extends AbstractMyDslApplicationIntegrationTest {
+
+	override protected initializeRemoteRepository(Git git, File parent) {
+		super.initializeRemoteRepository(git, parent)
+		writeToRemote('ChuckNorris.mydsl', 'Hello ChuckNorris!')
+	}
 
 	@Test
-	def void canAccessValidationService() {
+	def void canLinkAgainstIndex() {
 		// given
 		val example = '''
-			Hello world!
+			Hello world from ChuckNorris!
 		'''
 		val validateRequest = createValidationRequest('Minimal.mydsl', example)
 

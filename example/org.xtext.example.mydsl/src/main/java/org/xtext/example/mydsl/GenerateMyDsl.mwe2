@@ -42,6 +42,7 @@ Workflow {
             }
             webSupport = {
                 framework = "Orion"
+                generateServlet = false
             }
         }
     }

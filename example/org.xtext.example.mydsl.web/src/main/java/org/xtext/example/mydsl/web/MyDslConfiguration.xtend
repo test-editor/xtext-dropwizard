@@ -1,7 +1,7 @@
 package org.xtext.example.mydsl.web
 
-import io.dropwizard.Configuration
+import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 
-class MyDslConfiguration extends Configuration {
+class MyDslConfiguration extends XtextConfiguration {
 	
 }
