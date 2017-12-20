@@ -53,7 +53,7 @@ class BitbucketWebhookIntegrationTest extends AbstractExampleIntegrationTest {
 	}
 
 	private def Invocation createRequest() {
-		return createRequest('webhook/git').buildPost(Entity.json('{}'))
+		return createRequestWithApiToken('webhook/git', apiToken).buildPost(Entity.json('{}'))
 	}
 
 	private def String createFancyCommitHistory() {
