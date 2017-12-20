@@ -41,6 +41,7 @@ abstract class AbstractDropwizardIntegrationTest<C extends Configuration> {
 		val result = newLinkedList
 		result += config('server.applicationConnectors[0].port', '0')
 		result += config('server.adminConnectors[0].port', '0')
+		result += config('allowedOrigins', 'https?://localhost:*')
 		return result
 	}
 

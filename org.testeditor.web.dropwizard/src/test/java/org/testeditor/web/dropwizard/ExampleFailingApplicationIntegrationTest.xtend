@@ -3,7 +3,6 @@ package org.testeditor.web.dropwizard
 import io.dropwizard.testing.junit.DropwizardAppRule
 import org.junit.Test
 
-import static io.dropwizard.testing.ConfigOverride.config
 import static org.junit.Assert.assertTrue
 import static org.junit.Assert.fail
 
@@ -13,7 +12,11 @@ class ExampleFailingApplicationIntegrationTest {
 	def void failingAppStartWithInvalidApiTokenButApiTokenAuthAnnotatedResources() {
 		// given (Example app has ApiTokenAuth annotated resources!)
 		val illegalApiToken = ''
-		val dropwizardRule = new DropwizardAppRule(ExampleApplication, null, config('apiToken', illegalApiToken))
+		val config = new ExampleConfiguration => [
+			allowedOrigins = '*'
+			apiToken = illegalApiToken
+		]
+		val dropwizardRule = new DropwizardAppRule(ExampleApplication, config)
 
 		// when (starting the application)
 		try {
@@ -30,7 +33,10 @@ class ExampleFailingApplicationIntegrationTest {
 	@Test
 	def void failingAppStartWithMissingApiTokenButApiTokenAuthAnnotatedResources() {
 		// given (Example app has ApiTokenAuth annotated resources!)
-		val dropwizardRule = new DropwizardAppRule(ExampleApplication, new ExampleConfiguration)
+		val config = new ExampleConfiguration => [
+			allowedOrigins = '*'
+		]
+		val dropwizardRule = new DropwizardAppRule(ExampleApplication, config)
 
 		// when (starting the application)
 		try {
@@ -43,7 +49,7 @@ class ExampleFailingApplicationIntegrationTest {
 			assertTrue(expectedExceptionThrown)
 		}
 	}
-	
+
 	private def boolean anyCauseMatches(Throwable e, Class<?> clazz, String message) {
 		if (clazz.isAssignableFrom(e.class) && e.message.contains(message)) {
 			return true

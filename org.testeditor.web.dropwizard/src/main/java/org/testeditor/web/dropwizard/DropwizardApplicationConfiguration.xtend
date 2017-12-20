@@ -2,20 +2,16 @@ package org.testeditor.web.dropwizard
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.dropwizard.Configuration
+import org.eclipse.xtend.lib.annotations.Accessors
+import org.hibernate.validator.constraints.NotEmpty
 
+@Accessors
 class DropwizardApplicationConfiguration extends Configuration {
- 
-      String apiToken
- 
-      @JsonProperty
-      def String getApiToken() {
-          return this.apiToken
-      }
- 
-      @JsonProperty
-      def void setApiToken(String apiToken) {
-         this.apiToken = apiToken
-      }
- 
- 	
+
+	@NotEmpty @JsonProperty
+	String allowedOrigins
+
+	@JsonProperty
+	String apiToken
+
 }
