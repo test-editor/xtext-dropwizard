@@ -29,7 +29,7 @@ subprojects {
     group = 'org.testeditor.web'
 
     ext.versions = [
-        dropwizard: '1.2.0',
+        dropwizard: '1.2.2',
         xtext: '2.13.0'
     ]
 
