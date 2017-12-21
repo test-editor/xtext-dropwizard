@@ -33,6 +33,7 @@ abstract class AbstractXtextIntegrationTest<C extends Configuration> extends Abs
 		}
 
 	}
+	protected String apiToken = 'superSecretToken'
 
 	new() {
 		super()
@@ -43,6 +44,7 @@ abstract class AbstractXtextIntegrationTest<C extends Configuration> extends Abs
 		val result = super.createConfiguration()
 		result += config('localRepoFileRoot', [localRepoTemporaryFolder.root.path])
 		result += config('remoteRepoUrl', [remoteRepoTemporaryFolder.root.path])
+		result += config('apiToken', [apiToken])
 		return result
 	}
 	
