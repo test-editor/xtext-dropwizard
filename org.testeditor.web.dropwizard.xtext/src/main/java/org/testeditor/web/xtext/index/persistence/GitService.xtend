@@ -1,13 +1,22 @@
 package org.testeditor.web.xtext.index.persistence
 
 import com.google.common.annotations.VisibleForTesting
+import com.jcraft.jsch.JSch
+import com.jcraft.jsch.JSchException
+import com.jcraft.jsch.Session
 import java.io.File
 import java.util.List
 import javax.inject.Singleton
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.GitCommand
+import org.eclipse.jgit.api.TransportCommand
 import org.eclipse.jgit.diff.DiffEntry
 import org.eclipse.jgit.lib.ObjectId
+import org.eclipse.jgit.transport.JschConfigSessionFactory
+import org.eclipse.jgit.transport.OpenSshConfig.Host
+import org.eclipse.jgit.transport.SshTransport
 import org.eclipse.jgit.treewalk.CanonicalTreeParser
+import org.eclipse.jgit.util.FS
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.slf4j.LoggerFactory
 
@@ -29,12 +38,17 @@ class GitService {
 
 	@Accessors(PUBLIC_GETTER)
 	File projectFolder
-
+	
+	String privateKeyLocation
+	String knownHostsLocation
+	
 	/** 
 	 * initialize this git service. either open the existing git and pull, or clone the remote repo
 	 */
-	def void init(String localRepoFileRoot, String remoteRepoUrl) {
+	def void init(String localRepoFileRoot, String remoteRepoUrl, String privateKeyLocation, String knownHostsLocation) {
 		logger.info("Initializing with localRepoFileRoot='{}', remoteRepoUrl='{}'.", localRepoFileRoot, remoteRepoUrl)
+		this.privateKeyLocation = privateKeyLocation
+		this.knownHostsLocation = knownHostsLocation
 		projectFolder = verifyIsFolderOrNonExistent(localRepoFileRoot)
 		if (isExistingGitRepository(projectFolder)) {
 			openRepository(projectFolder, remoteRepoUrl)
@@ -42,6 +56,10 @@ class GitService {
 		} else {
 			cloneRepository(projectFolder, remoteRepoUrl)
 		}
+	}
+	
+	def void init(String localRepoFileRoot, String remoteRepoUrl) {
+	    init(localRepoFileRoot, remoteRepoUrl, null, null)
 	}
 
 	private def File verifyIsFolderOrNonExistent(String localRepoFileRoot) {
@@ -59,8 +77,16 @@ class GitService {
 		return folder.exists && new File(folder, DOT_GIT).exists
 	}
 
+	/**
+	 * configure transport commands with ssh credentials (if configured for this dropwizard app)
+	 */
+	def <T, C extends GitCommand<T>> GitCommand<T> configureTransport(TransportCommand<C, T> command) {
+		command.setSshSessionFactory
+		return command
+	}
+	
 	def void pull() {
-		git.pull.call
+		git.pull.configureTransport.call
 	}
 
 	def ObjectId getHeadTree() {
@@ -89,7 +115,12 @@ class GitService {
 	}
 
 	private def void cloneRepository(File projectFolder, String remoteRepoUrl) {
-		git = Git.cloneRepository.setDirectory(projectFolder).setURI(remoteRepoUrl).call
+		val cloneCommand = Git.cloneRepository => [
+			setURI(remoteRepoUrl)
+			setSshSessionFactory
+			setDirectory(projectFolder)
+		]
+		git = cloneCommand.call
 	}
 
 	@VisibleForTesting
@@ -116,4 +147,40 @@ class GitService {
 		return config.getString(CONFIG_REMOTE_SECTION, DEFAULT_REMOTE_NAME, CONFIG_KEY_URL)
 	}
 
+	private def <T, C extends GitCommand<T>> void setSshSessionFactory(TransportCommand<C, ?> command) {
+		
+		val sshSessionFactory = new JschConfigSessionFactory {
+
+			override protected void configure(Host host, Session session) {
+				logger.info('''HashKnownHosts = «session.getConfig('HashKnownHosts')»''')
+				logger.info('''StrictHostKeyChecking = «session.getConfig('StrictHostKeyChecking')»''')
+			}
+
+			// provide custom private key location (if not located at ~/.ssh/id_rsa)
+			// provide custom known hosts file location (if not located at ~/.ssh/known_hosts)
+			// see also http://www.codeaffine.com/2014/12/09/jgit-authentication/
+			override protected JSch createDefaultJSch(FS fs) throws JSchException {
+				val defaultJSch = super.createDefaultJSch(fs)
+				if (!privateKeyLocation.isNullOrEmpty) {
+					defaultJSch.addIdentity(privateKeyLocation)
+				}
+				if (!knownHostsLocation.isNullOrEmpty) {
+					defaultJSch.knownHosts = knownHostsLocation
+					defaultJSch.hostKeyRepository.hostKey.forEach [
+						logger.info('''host = «host», type = «type», key = «key», fingerprint = «getFingerPrint(defaultJSch)»''')
+					]
+				}
+				return defaultJSch
+			}
+
+		}
+		
+		command.transportConfigCallback = [ transport |
+			if (transport instanceof SshTransport) {
+				transport.sshSessionFactory = sshSessionFactory
+			}
+		]
+
+	}
+	
 }
