@@ -25,12 +25,12 @@ class FileTestUtils {
 		return Files.asCharSource(file, UTF_8).read
 	}
 
-	def void write(File parent, String child, String contents) {
+	def File write(File parent, String child, String contents) {
 		val fileToWrite = new File(parent, child)
 		Files.createParentDirs(fileToWrite)
 		fileToWrite.createNewFile // will not override existing file
 		Files.asCharSink(fileToWrite, UTF_8).write(contents)
+		return fileToWrite
 	}
-	
 
 }

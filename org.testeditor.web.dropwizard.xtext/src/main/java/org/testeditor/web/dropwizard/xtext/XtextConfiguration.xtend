@@ -9,9 +9,15 @@ import org.testeditor.web.dropwizard.DropwizardApplicationConfiguration
 public class XtextConfiguration extends DropwizardApplicationConfiguration {
 
 	@NotEmpty @JsonProperty
-	String localRepoFileRoot
+	String localRepoFileRoot = 'repo'
 
 	@NotEmpty @JsonProperty
 	String remoteRepoUrl
+
+	@JsonProperty
+	String privateKeyLocation
+
+	@JsonProperty
+	String knownHostsLocation
 
 }
