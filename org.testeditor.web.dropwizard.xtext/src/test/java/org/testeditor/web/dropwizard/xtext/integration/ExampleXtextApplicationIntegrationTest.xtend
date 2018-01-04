@@ -31,6 +31,8 @@ class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationT
 	}
 	
 	@Test
+	// tests whether jackson is configured properly `objectMapper.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)`
+	// otherwise serialization fails (see https://stackoverflow.com/a/38956032/1839228)
 	def void serializingContentAssistEntryWorksEvenIfEObjectIsPresent() {
 		// given
 		val contentAssistEntry = new ContentAssistEntry => [
@@ -44,9 +46,6 @@ class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationT
 		// then
 		asJson.contains('"description":"MyFancyDescription"').assertTrue
 		asJson.contains('"source":').assertFalse
-		
-		// tests whether jackson is configured properly `objectMapper.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)`
-		// otherwise serialization fails (see https://stackoverflow.com/a/38956032/1839228)
 	}
 
 }
