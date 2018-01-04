@@ -2,7 +2,10 @@ package org.testeditor.web.dropwizard.xtext.integration
 
 import java.io.File
 import org.eclipse.jgit.api.Git
+import org.eclipse.xtext.ide.editor.contentassist.ContentAssistEntry
+import org.eclipse.xtext.resource.EObjectDescription
 import org.junit.Test
+import org.xtext.example.mydsl.myDsl.impl.MyDslFactoryImpl
 
 import static javax.ws.rs.core.Response.Status.*
 
@@ -27,4 +30,22 @@ class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationT
 		response.readEntity(String).assertEquals('{"issues":[]}')
 	}
 	
+	@Test
+	// tests whether jackson is configured properly `objectMapper.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)`
+	// otherwise serialization fails (see https://stackoverflow.com/a/38956032/1839228)
+	def void serializingContentAssistEntryWorksEvenIfEObjectIsPresent() {
+		// given
+		val contentAssistEntry = new ContentAssistEntry => [
+			description = 'MyFancyDescription'
+			source = EObjectDescription.create('some', new MyDslFactoryImpl().createGreeting)
+		]
+
+		// when
+		val asJson = dropwizardAppRule.environment.objectMapper.writeValueAsString(contentAssistEntry)
+
+		// then
+		asJson.contains('"description":"MyFancyDescription"').assertTrue
+		asJson.contains('"source":').assertFalse
+	}
+
 }

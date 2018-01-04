@@ -1,5 +1,6 @@
 package org.testeditor.web.dropwizard.xtext
 
+import com.fasterxml.jackson.databind.MapperFeature
 import com.google.inject.Module
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
@@ -34,6 +35,11 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 
 	override run(T configuration, Environment environment) throws Exception {
 		super.run(configuration, environment)
+
+		// necessary for jackson json serializer to ignore transient fields (in xtext ContentAssistEntry)
+		// see ExampleXtextApplicationIntegrationTest.serializingContentAssistEntryWorksEvenIfEObjectIsPresent and https://stackoverflow.com/a/38956032/1839228
+		environment.objectMapper.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)
+
 		runLanguageSetups(configuration, environment)
 		initializeXtextIndex(configuration, environment)
 		configureXtextServiceResource(configuration, environment)
