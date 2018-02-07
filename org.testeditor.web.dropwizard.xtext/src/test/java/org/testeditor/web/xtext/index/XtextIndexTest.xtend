@@ -15,7 +15,6 @@ import org.eclipse.xtext.builder.standalone.IIssueHandler
 import org.eclipse.xtext.builder.standalone.IIssueHandler.DefaultIssueHandler
 import org.eclipse.xtext.builder.standalone.ILanguageConfiguration
 import org.eclipse.xtext.builder.standalone.LanguageAccessFactory
-import org.eclipse.xtext.builder.standalone.StandaloneBuilder
 import org.eclipse.xtext.builder.standalone.compiler.EclipseJavaCompiler
 import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
 import org.eclipse.xtext.generator.AbstractFileSystemAccess
@@ -25,6 +24,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.xtext.example.mydsl.MyDslStandaloneSetup
+
+import static org.assertj.core.api.Assertions.*
 
 class XtextIndexTest extends AbstractTestWithExampleLanguage {
 
@@ -52,7 +53,7 @@ class XtextIndexTest extends AbstractTestWithExampleLanguage {
 				createLanguageConfiguration(MyDslStandaloneSetup),
 				createLanguageConfiguration(XtendStandaloneSetup)
 			], class.classLoader)
-			configureSourcePaths('src')
+			configureSourcePaths(tmpFolder.root.absolutePath)
 			configureClassPathEntries(jarFilename)
 		]
 
@@ -60,26 +61,12 @@ class XtextIndexTest extends AbstractTestWithExampleLanguage {
 		builder.launch
 
 		// then
-		// index reports exported objects from dsl artifacts in jar
 		builder.index.exportedObjects.map[qualifiedName.toString].toSet => [
-			contains('Peter').assertTrue // mydsl is indexed
-			contains('Test').assertTrue // xtend is indexed
-			contains('jxtest').assertFalse // java is NOT indexed
+			assertThat(it).containsOnly('Peter', 'Test') // java artifact (jxtest) is NOT indexed
 		]
 		// classloader of this resource set resolve classes from jar (hopefully this will mean, that java references will be resolved for dsl resources)
 		val clazz = (builder.resourceSet.classpathURIContext as ClassLoader).loadClass('jtest')
-		clazz.name.assertEquals('jtest')
-	}
-
-	private def StandaloneBuilder configureSourcePaths(StandaloneBuilder builder, String ... paths) {
-		builder.baseDir = tmpFolder.root.toString
-		builder.sourceDirs = paths.map[tmpFolder.newFolder(it).absolutePath].toArray(#[])
-		return builder
-	}
-
-	private def StandaloneBuilder configureClassPathEntries(StandaloneBuilder builder, String ... classpathEntries) {
-		builder.classPathEntries = classpathEntries
-		return builder
+		assertThat(clazz.name).isEqualTo('jtest')
 	}
 
 	private def void add(JarOutputStream jarOutputStream, String fileName, byte[] content) {

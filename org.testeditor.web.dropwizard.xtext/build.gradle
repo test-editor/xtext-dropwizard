@@ -16,4 +16,5 @@ dependencies {
     testCompile project(':org.testeditor.web.dropwizard.xtext.testing')
     testCompile "org.xtext.example.mydsl:org.xtext.example.mydsl:1.0.0"
     testCompile "org.xtext.example.mydsl:org.xtext.example.mydsl.ide:1.0.0"
+    testCompile 'org.assertj:assertj-core:3.9.0'
 }

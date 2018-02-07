@@ -25,4 +25,15 @@ class CustomStandaloneBuilder extends StandaloneBuilder {
 		return index.resourceSet as XtextResourceSet
 	}
 	
+	def CustomStandaloneBuilder configureSourcePaths(String rootPath, String ... paths) {
+		baseDir = rootPath
+		sourceDirs = paths
+		return this
+	}
+
+	def CustomStandaloneBuilder configureClassPathEntries(String ... classpathEntries) {
+		classPathEntries = classpathEntries
+		return this
+	}
+
 }
