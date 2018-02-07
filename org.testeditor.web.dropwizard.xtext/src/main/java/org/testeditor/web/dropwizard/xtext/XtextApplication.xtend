@@ -48,12 +48,13 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 
 	protected def void runLanguageSetups(T configuration, Environment environment) {
 		val setups = getLanguageSetups(indexModule)
+		indexUpdater.setLanguageSetups(setups)
 		setups.forEach[createInjectorAndDoEMFRegistration()]
 	}
 
 	protected def void initializeXtextIndex(T configuration, Environment environment) {
 		gitService.init(configuration.localRepoFileRoot, configuration.remoteRepoUrl, configuration.privateKeyLocation, configuration.knownHostsLocation)
-		indexUpdater.addToIndex(new File(configuration.localRepoFileRoot))
+		indexUpdater.initIndexWithGradleRoot(new File(configuration.localRepoFileRoot))
 	}
 
 	protected def void configureXtextServiceResource(T configuration, Environment environment) {

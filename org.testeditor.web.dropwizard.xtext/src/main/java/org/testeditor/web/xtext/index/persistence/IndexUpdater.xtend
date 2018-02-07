@@ -1,15 +1,27 @@
 package org.testeditor.web.xtext.index.persistence
 
 import com.google.common.annotations.VisibleForTesting
+import com.google.common.io.CharStreams
 import java.io.File
+import java.io.InputStreamReader
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 import java.util.List
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import org.apache.commons.io.FilenameUtils
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.jgit.diff.DiffEntry
 import org.eclipse.jgit.lib.Constants
+import org.eclipse.xtext.ISetup
+import org.eclipse.xtext.builder.standalone.ILanguageConfiguration
+import org.eclipse.xtext.builder.standalone.LanguageAccessFactory
+import org.eclipse.xtext.generator.OutputConfigurationProvider
 import org.slf4j.LoggerFactory
+import org.testeditor.web.xtext.index.CustomStandaloneBuilder
 import org.testeditor.web.xtext.index.XtextIndex
 
 class IndexUpdater {
@@ -17,6 +29,11 @@ class IndexUpdater {
 	static val logger = LoggerFactory.getLogger(IndexUpdater)
 
 	@Inject XtextIndex index
+	@Inject CustomStandaloneBuilder builder
+	@Inject LanguageAccessFactory languageAccessFactory
+	@Inject OutputConfigurationProvider configurationProvider
+
+	var List<ISetup> languageSetups
 
 	/**
 	 * Recursively traverses the file tree and adds all files to the
@@ -28,6 +45,45 @@ class IndexUpdater {
 		} else if (file.isFile && isRelevantForIndex(file.path)) {
 			val uri = getAbsoluteFileURI(file)
 			index.updateOrAdd(uri)
+		}
+	}
+
+	private def void prepareGradleTask(File repoRoot) {
+		val process = new ProcessBuilder('./gradlew', 'tasks', '--all').directory(repoRoot).start
+		process.waitFor(10, TimeUnit.MINUTES) // allow for downloads and the like
+		val jars = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8)).filter['printTestClasspath'.equals(it)]
+		if (jars.empty) {
+			Files.write(Paths.get(repoRoot.absolutePath).resolve('build.gradle'), '''
+				task printTestClasspath {
+								doLast {
+												configurations.testRuntime.each { println it }
+					}
+				}
+			'''.toString.bytes, StandardOpenOption.APPEND)
+		}
+	}
+
+	private def Iterable<String> collectClasspathJarsViaGradle(File repoRoot) {
+		val process = new ProcessBuilder('./gradlew', 'printTestClassPath').directory(repoRoot).start
+		process.waitFor(10, TimeUnit.MINUTES) // allow for downloads and the like
+		val jars = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8)).filter[startsWith('/')].filter[endsWith('.jar')].filter [
+			new File(it).exists
+		]
+		return jars
+	}
+
+	def void initIndexWithGradleRoot(File file) {
+		if (new File(file.absolutePath + '/build.gradle').exists) {
+			prepareGradleTask(file)
+			val jars = collectClasspathJarsViaGradle(file)
+			builder => [
+				languages = languageAccessFactory.createLanguageAccess(languageSetups.map[createLanguageConfiguration(class)], class.classLoader)
+				configureSourcePaths(file.absolutePath + "/src/main/java", file.absolutePath + '/src/test/java')
+
+				configureClassPathEntries(#[file.absolutePath + '/classes/java/main' /*, file.absolutePath + '/classes/java/test'*/ ] + jars)
+			// test holds generated test classes
+			]
+			builder.launch // does all the indexing ...
 		}
 	}
 
@@ -103,6 +159,28 @@ class IndexUpdater {
 	private def URI getAbsoluteFileURI(File parent, String child) {
 		val file = new File(parent, child)
 		return getAbsoluteFileURI(file)
+	}
+
+	def setLanguageSetups(List<ISetup> setups) {
+		languageSetups = setups
+	}
+
+	private def ILanguageConfiguration createLanguageConfiguration(Class<? extends ISetup> setupClass) {
+		return new ILanguageConfiguration() {
+
+			override getOutputConfigurations() {
+				configurationProvider.getOutputConfigurations()
+			}
+
+			override getSetup() {
+				return setupClass.name
+			}
+
+			override isJavaSupport() {
+				return true
+			}
+
+		}
 	}
 
 }
