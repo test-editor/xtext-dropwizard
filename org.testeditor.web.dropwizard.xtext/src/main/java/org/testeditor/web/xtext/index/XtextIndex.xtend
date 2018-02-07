@@ -30,6 +30,11 @@ class XtextIndex extends ResourceSetBasedResourceDescriptions {
 		installResourceDescriptionsData(resourceSet, data)
 		super.context = resourceSet
 	}
+	
+	def void init(ResourceDescriptionsData newData, XtextResourceSet resourceSet) {
+		data = new ResourceDescriptionsData(emptyList)
+		super.context = resourceSet
+	}
 
 	/** 
 	 * add resource to index

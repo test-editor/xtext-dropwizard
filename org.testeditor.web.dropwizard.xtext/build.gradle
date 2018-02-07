@@ -9,7 +9,9 @@ dependencies {
     compile "org.eclipse.xtext:org.eclipse.xtext.web.servlet:$versions.xtext"
     compile "org.eclipse.jgit:org.eclipse.jgit:4.7.0.201704051617-r"
     compile "commons-io:commons-io:2.5"
-
+    compile "org.eclipse.xtext:org.eclipse.xtext.builder.standalone:$versions.xtext"
+    compile "org.eclipse.xtend:org.eclipse.xtend.core:$versions.xtext"
+     
     testCompile project(':org.testeditor.web.dropwizard.testing')
     testCompile project(':org.testeditor.web.dropwizard.xtext.testing')
     testCompile "org.xtext.example.mydsl:org.xtext.example.mydsl:1.0.0"
