@@ -16,6 +16,15 @@ import org.testeditor.web.xtext.index.XtextIndexModule
 import org.testeditor.web.xtext.index.persistence.GitService
 import org.testeditor.web.xtext.index.persistence.IndexUpdater
 import org.testeditor.web.xtext.index.persistence.webhook.BitbucketWebhookResource
+import org.eclipse.xtext.generator.AbstractFileSystemAccess
+// import org.eclipse.xtext.xbase.testing.RegisteringFileSystemAccess
+import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
+import org.eclipse.xtext.builder.standalone.compiler.EclipseJavaCompiler
+import org.eclipse.xtext.builder.standalone.IIssueHandler
+import org.eclipse.xtext.builder.standalone.IIssueHandler.DefaultIssueHandler
+import org.eclipse.xtext.generator.JavaIoFileSystemAccess
+import org.testeditor.web.xtext.index.CustomWebResourceSetProvider
+import org.eclipse.xtext.web.server.model.IWebResourceSetProvider
 
 abstract class XtextApplication<T extends XtextConfiguration> extends DropwizardApplication<T> {
 
@@ -30,6 +39,12 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 
 	override protected collectModules(List<Module> modules) {
 		super.collectModules(modules)
+		modules += [ binder |
+			binder.bind(AbstractFileSystemAccess).to(JavaIoFileSystemAccess).asEagerSingleton
+			binder.bind(IJavaCompiler).to(EclipseJavaCompiler)
+			binder.bind(IIssueHandler).to(DefaultIssueHandler)
+			// binder.bind(IWebResourceSetProvider).to(CustomWebResourceSetProvider).asEagerSingleton // make sure to always use the same resource set
+		]
 		modules += new XtextRuntimeModule
 	}
 
@@ -49,7 +64,7 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 	protected def void runLanguageSetups(T configuration, Environment environment) {
 		val setups = getLanguageSetups(indexModule)
 		indexUpdater.setLanguageSetups(setups)
-		setups.forEach[createInjectorAndDoEMFRegistration()]
+		// setups.forEach[createInjectorAndDoEMFRegistration()]
 	}
 
 	protected def void initializeXtextIndex(T configuration, Environment environment) {

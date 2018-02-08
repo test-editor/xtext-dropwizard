@@ -9,6 +9,7 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.util.List
+import java.util.Map
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import org.apache.commons.io.FilenameUtils
@@ -17,9 +18,10 @@ import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.jgit.diff.DiffEntry
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.xtext.ISetup
-import org.eclipse.xtext.builder.standalone.ILanguageConfiguration
-import org.eclipse.xtext.builder.standalone.LanguageAccessFactory
+import org.eclipse.xtext.builder.standalone.LanguageAccess
 import org.eclipse.xtext.generator.OutputConfigurationProvider
+import org.eclipse.xtext.resource.FileExtensionProvider
+import org.eclipse.xtext.resource.IResourceServiceProvider
 import org.slf4j.LoggerFactory
 import org.testeditor.web.xtext.index.CustomStandaloneBuilder
 import org.testeditor.web.xtext.index.XtextIndex
@@ -30,7 +32,6 @@ class IndexUpdater {
 
 	@Inject XtextIndex index
 	@Inject CustomStandaloneBuilder builder
-	@Inject LanguageAccessFactory languageAccessFactory
 	@Inject OutputConfigurationProvider configurationProvider
 
 	var List<ISetup> languageSetups
@@ -51,12 +52,13 @@ class IndexUpdater {
 	private def void prepareGradleTask(File repoRoot) {
 		val process = new ProcessBuilder('./gradlew', 'tasks', '--all').directory(repoRoot).start
 		process.waitFor(10, TimeUnit.MINUTES) // allow for downloads and the like
-		val jars = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8)).filter['printTestClasspath'.equals(it)]
-		if (jars.empty) {
+		val completeOutput = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8))
+		val hasPrintTestClasspathTask = completeOutput.exists['printTestClasspath'.equals(it)]
+		if (!hasPrintTestClasspathTask) {
 			Files.write(Paths.get(repoRoot.absolutePath).resolve('build.gradle'), '''
 				task printTestClasspath {
-								doLast {
-												configurations.testRuntime.each { println it }
+					doLast {
+						configurations.testRuntime.each { println it }
 					}
 				}
 			'''.toString.bytes, StandardOpenOption.APPEND)
@@ -64,11 +66,9 @@ class IndexUpdater {
 	}
 
 	private def Iterable<String> collectClasspathJarsViaGradle(File repoRoot) {
-		val process = new ProcessBuilder('./gradlew', 'printTestClassPath').directory(repoRoot).start
+		val process = new ProcessBuilder('./gradlew', 'printTestClasspath').directory(repoRoot).start
 		process.waitFor(10, TimeUnit.MINUTES) // allow for downloads and the like
-		val jars = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8)).filter[startsWith('/')].filter[endsWith('.jar')].filter [
-			new File(it).exists
-		]
+		val jars = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8)).filter[startsWith('/')].filter[endsWith('.jar')]
 		return jars
 	}
 
@@ -77,13 +77,15 @@ class IndexUpdater {
 			prepareGradleTask(file)
 			val jars = collectClasspathJarsViaGradle(file)
 			builder => [
-				languages = languageAccessFactory.createLanguageAccess(languageSetups.map[createLanguageConfiguration(class)], class.classLoader)
+				languages = createLanguageAccess(languageSetups)
 				configureSourcePaths(file.absolutePath + "/src/main/java", file.absolutePath + '/src/test/java')
 
-				configureClassPathEntries(#[file.absolutePath + '/classes/java/main' /*, file.absolutePath + '/classes/java/test'*/ ] + jars)
+				configureClassPathEntries(#[file.absolutePath + '/build/classes/java/main' /*, file.absolutePath + '/build/classes/java/test'*/ ] + jars)
 			// test holds generated test classes
 			]
 			builder.launch // does all the indexing ...
+		} else {
+			addToIndex(file)
 		}
 	}
 
@@ -165,22 +167,18 @@ class IndexUpdater {
 		languageSetups = setups
 	}
 
-	private def ILanguageConfiguration createLanguageConfiguration(Class<? extends ISetup> setupClass) {
-		return new ILanguageConfiguration() {
-
-			override getOutputConfigurations() {
-				configurationProvider.getOutputConfigurations()
-			}
-
-			override getSetup() {
-				return setupClass.name
-			}
-
-			override isJavaSupport() {
-				return true
-			}
-
+	/** partial copy of LanguageAccessFactory */
+	private def Map<String, LanguageAccess> createLanguageAccess(List<? extends ISetup> languageSetups) {
+		val result = newHashMap
+		for (ISetup setup : languageSetups) {
+			val injector = setup.createInjectorAndDoEMFRegistration
+			val serviceProvider = injector.getInstance(IResourceServiceProvider)
+			val fileExtensionProvider = injector.getInstance(FileExtensionProvider)
+			val languageAccess = new LanguageAccess(configurationProvider.outputConfigurations, serviceProvider, true)
+			fileExtensionProvider.fileExtensions.forEach[result.put(it, languageAccess)]
 		}
+
+		return result
 	}
 
 }

@@ -6,11 +6,13 @@ import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
 import javax.inject.Inject
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.eclipse.xtend.lib.annotations.AccessorType
+import javax.inject.Singleton
 
 /** 
  * derived from StandaloneBuilder, initializing the custom xtext index when builder has built the resource set
  * and the resource descriptions data  
  */
+ @Singleton
 class CustomStandaloneBuilder extends StandaloneBuilder {
 
 	@Accessors(AccessorType.PUBLIC_GETTER)	

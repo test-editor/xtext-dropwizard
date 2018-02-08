@@ -1,6 +1,7 @@
 package org.testeditor.web.dropwizard.xtext
 
 import com.google.inject.Injector
+import javax.inject.Inject
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 import javax.ws.rs.Consumes
@@ -28,6 +29,7 @@ import org.eclipse.xtext.web.server.XtextServiceDispatcher
 import org.eclipse.xtext.web.server.XtextServiceDispatcher.ServiceDescriptor
 import org.eclipse.xtext.web.servlet.XtextServlet
 import org.slf4j.LoggerFactory
+import org.testeditor.web.xtext.index.CustomStandaloneBuilder
 
 /**
  * Adapted from {@link XtextServlet}.
@@ -36,7 +38,9 @@ import org.slf4j.LoggerFactory
 class XtextServiceResource {
 
 	static val logger = LoggerFactory.getLogger(XtextServiceResource)
-	static val serviceProviderRegistry = IResourceServiceProvider.Registry.INSTANCE
+	// static val serviceProviderRegistry = IResourceServiceProvider.Registry.INSTANCE
+
+	@Inject CustomStandaloneBuilder standaloneBuilder
 
 	@Context UriInfo ui
 	@Context HttpServletRequest request
@@ -119,27 +123,40 @@ class XtextServiceResource {
 	 * Copied from super class, Xtext should really expect IServiceContext as a parameter, not HttpServiceContext
 	 */
 	protected def Injector getInjector(IServiceContext serviceContext) throws UnknownLanguageException {
-		var IResourceServiceProvider resourceServiceProvider
-
+		// var IResourceServiceProvider resourceServiceProvider
 		val emfURI = URI.createURI(serviceContext.getParameter('resource') ?: '')
 		val contentType = serviceContext.getParameter('contentType')
-		if (contentType.nullOrEmpty) {
-			resourceServiceProvider = serviceProviderRegistry.getResourceServiceProvider(emfURI)
-			if (resourceServiceProvider === null) {
-				if (emfURI.toString.empty) {
-					throw new UnknownLanguageException('''Unable to identify the Xtext language: missing parameter 'resource' or 'contentType'.''')
-				} else {
-					throw new UnknownLanguageException('''Unable to identify the Xtext language for resource «emfURI».''')
-				}
 
-			}
-		} else {
-			resourceServiceProvider = serviceProviderRegistry.getResourceServiceProvider(emfURI, contentType)
-			if (resourceServiceProvider === null) {
+		val fileExtension = contentType ?: emfURI.fileExtension
+		val languageAccess = standaloneBuilder.languages.get(fileExtension)
+		if (languageAccess === null) {
+			if (!contentType.nullOrEmpty) {
 				throw new UnknownLanguageException('''Unable to identify the Xtext language for contentType «contentType».''')
+			} else if (!emfURI.toString.empty) {
+				throw new UnknownLanguageException('''Unable to identify the Xtext language for resource «emfURI».''')
+			} else {
+				throw new UnknownLanguageException('''Unable to identify the Xtext language: missing parameter 'resource' or 'contentType'.''')
 			}
 		}
-		return resourceServiceProvider.get(Injector)
+		return languageAccess.resourceServiceProvider.get(Injector)
+
+//		if (contentType.nullOrEmpty) {
+//			resourceServiceProvider = serviceProviderRegistry.getResourceServiceProvider(emfURI)
+//			if (resourceServiceProvider === null) {
+//				if (emfURI.toString.empty) {
+//					throw new UnknownLanguageException('''Unable to identify the Xtext language: missing parameter 'resource' or 'contentType'.''')
+//				} else {
+//					throw new UnknownLanguageException('''Unable to identify the Xtext language for resource «emfURI».''')
+//				}
+//
+//			}
+//		} else {
+//			resourceServiceProvider = serviceProviderRegistry.getResourceServiceProvider(emfURI, contentType)
+//			if (resourceServiceProvider === null) {
+//				throw new UnknownLanguageException('''Unable to identify the Xtext language for contentType «contentType».''')
+//			}
+//		}
+//		return resourceServiceProvider.get(Injector)
 	}
 
 }
