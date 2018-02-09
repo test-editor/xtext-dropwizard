@@ -48,6 +48,11 @@ class IndexUpdater {
 			index.updateOrAdd(uri)
 		}
 	}
+	
+	private def void runGradleAssemble(File repoRoot) {
+		val process = new ProcessBuilder('./gradlew', 'assemble').directory(repoRoot).start
+		process.waitFor(10, TimeUnit.MINUTES) // allow for downloads and the like
+	}
 
 	private def void prepareGradleTask(File repoRoot) {
 		val process = new ProcessBuilder('./gradlew', 'tasks', '--all').directory(repoRoot).start
@@ -75,6 +80,7 @@ class IndexUpdater {
 	def void initIndexWithGradleRoot(File file) {
 		if (new File(file.absolutePath + '/build.gradle').exists) {
 			prepareGradleTask(file)
+			runGradleAssemble(file)
 			val jars = collectClasspathJarsViaGradle(file)
 			builder => [
 				languages = createLanguageAccess(languageSetups)
