@@ -10,22 +10,18 @@ import org.eclipse.xtext.generator.AbstractFileSystemAccess
 import org.eclipse.xtext.generator.JavaIoFileSystemAccess
 import org.eclipse.xtext.resource.IResourceDescriptions
 import org.eclipse.xtext.web.server.model.IWebResourceSetProvider
-import org.eclipse.xtext.common.types.xtext.ClasspathBasedTypeScope
-import org.eclipse.xtext.scoping.IScope
 
 class XtextIndexModule extends AbstractModule {
 
 	@Inject XtextIndex index
 
 	override protected configure() {
-		val resourceSetProvider = new CustomWebResourceSetProvider 
-		resourceSetProvider.initWith(index)		
+		val resourceSetProvider = new CustomWebResourceSetProvider(index)
 		binder.bind(IResourceDescriptions).toInstance(index)
 		binder.bind(AbstractFileSystemAccess).to(JavaIoFileSystemAccess).asEagerSingleton
 		binder.bind(IJavaCompiler).to(EclipseJavaCompiler)
 		binder.bind(IIssueHandler).to(DefaultIssueHandler)
-		binder.bind(IWebResourceSetProvider).toInstance(resourceSetProvider)
-		// binder.bind(IScope).to(ClasspathBasedTypeScope)
+		binder.bind(IWebResourceSetProvider).toInstance(resourceSetProvider) // makes sure the XtextWebDocuments get the same resource set as the index uses
 	}
 
 }

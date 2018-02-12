@@ -1,21 +1,27 @@
 package org.testeditor.web.xtext.index
 
-import org.eclipse.xtext.web.server.model.IWebResourceSetProvider
-import org.eclipse.xtext.web.server.IServiceContext
-import javax.inject.Inject
 import javax.inject.Singleton
+import org.eclipse.xtext.resource.XtextResourceSet
+import org.eclipse.xtext.web.server.IServiceContext
+import org.eclipse.xtext.web.server.model.IWebResourceSetProvider
 
 @Singleton
 class CustomWebResourceSetProvider implements IWebResourceSetProvider {
-	
-	var XtextIndex index
-	
-	def void initWith(XtextIndex newIndex) {
+
+	val XtextIndex index
+
+	new(XtextIndex newIndex) {
 		index = newIndex
 	}
-	
+
 	override get(String resourceId, IServiceContext serviceContext) {
-		return index.resourceSet
+		val result = new XtextResourceSet
+		result.classpathURIContext = (index.resourceSet as XtextResourceSet).classpathURIContext
+
+		return result 
+		// cannot return index.resourceSet, since concurrent service requests (e.g. occurrences) may modify this resource set 
+		// resulting in inconsistent results.
+		// class path context must be shared however, in order to allow cross references to compiled java resources!
 	}
-	
+
 }

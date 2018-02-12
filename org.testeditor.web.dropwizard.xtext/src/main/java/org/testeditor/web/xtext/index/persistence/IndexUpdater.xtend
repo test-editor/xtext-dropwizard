@@ -1,97 +1,63 @@
 package org.testeditor.web.xtext.index.persistence
 
 import com.google.common.annotations.VisibleForTesting
-import com.google.common.io.CharStreams
 import java.io.File
-import java.io.InputStreamReader
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
 import java.util.List
 import java.util.Map
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import org.apache.commons.io.FilenameUtils
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.jgit.diff.DiffEntry
 import org.eclipse.jgit.lib.Constants
+import org.eclipse.xtend.lib.annotations.Accessors
 import org.eclipse.xtext.ISetup
 import org.eclipse.xtext.builder.standalone.LanguageAccess
 import org.eclipse.xtext.generator.OutputConfigurationProvider
 import org.eclipse.xtext.resource.FileExtensionProvider
 import org.eclipse.xtext.resource.IResourceServiceProvider
 import org.slf4j.LoggerFactory
-import org.testeditor.web.xtext.index.CustomStandaloneBuilder
 import org.testeditor.web.xtext.index.XtextIndex
+import javax.inject.Singleton
 
+/**
+ * Default implementation of an index used for xtext web services in the context of dropwizard applications
+ */
+@Singleton
 class IndexUpdater {
 
 	static val logger = LoggerFactory.getLogger(IndexUpdater)
 
 	@Inject XtextIndex index
-	@Inject CustomStandaloneBuilder builder
 	@Inject OutputConfigurationProvider configurationProvider
 
+	@Accessors(PUBLIC_GETTER)
 	var List<ISetup> languageSetups
+	@Accessors(PUBLIC_GETTER)
+	var Map<String, LanguageAccess> languageAccessors
+	
+	def void initLanguages(List<ISetup> newLanguageSetups) {
+		languageSetups = newLanguageSetups
+		languageAccessors = createLanguageAccess(languageSetups)
+	}
 
+	/**
+	 * override to change default initialization of index (make sure to use a singleton for subclasses)
+	 */
+	def void initIndex(File file) {
+		addToIndex(file)
+	}
+	
 	/**
 	 * Recursively traverses the file tree and adds all files to the
 	 * index that are relevant (with registered language extensions).
 	 */
-	def void addToIndex(File file) {
+	protected def void addToIndex(File file) {
 		if (file.isDirectory && !shouldSkipDirectory(file)) {
 			file.listFiles.forEach[addToIndex]
 		} else if (file.isFile && isRelevantForIndex(file.path)) {
 			val uri = getAbsoluteFileURI(file)
 			index.updateOrAdd(uri)
-		}
-	}
-	
-	private def void runGradleAssemble(File repoRoot) {
-		val process = new ProcessBuilder('./gradlew', 'assemble').directory(repoRoot).start
-		process.waitFor(10, TimeUnit.MINUTES) // allow for downloads and the like
-	}
-
-	private def void prepareGradleTask(File repoRoot) {
-		val process = new ProcessBuilder('./gradlew', 'tasks', '--all').directory(repoRoot).start
-		process.waitFor(10, TimeUnit.MINUTES) // allow for downloads and the like
-		val completeOutput = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8))
-		val hasPrintTestClasspathTask = completeOutput.exists['printTestClasspath'.equals(it)]
-		if (!hasPrintTestClasspathTask) {
-			Files.write(Paths.get(repoRoot.absolutePath).resolve('build.gradle'), '''
-				task printTestClasspath {
-					doLast {
-						configurations.testRuntime.each { println it }
-					}
-				}
-			'''.toString.bytes, StandardOpenOption.APPEND)
-		}
-	}
-
-	private def Iterable<String> collectClasspathJarsViaGradle(File repoRoot) {
-		val process = new ProcessBuilder('./gradlew', 'printTestClasspath').directory(repoRoot).start
-		process.waitFor(10, TimeUnit.MINUTES) // allow for downloads and the like
-		val jars = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8)).filter[startsWith('/')].filter[endsWith('.jar')]
-		return jars
-	}
-
-	def void initIndexWithGradleRoot(File file) {
-		if (new File(file.absolutePath + '/build.gradle').exists) {
-			prepareGradleTask(file)
-			runGradleAssemble(file)
-			val jars = collectClasspathJarsViaGradle(file)
-			builder => [
-				languages = createLanguageAccess(languageSetups)
-				configureSourcePaths(file.absolutePath + "/src/main/java", file.absolutePath + '/src/test/java')
-
-				configureClassPathEntries(#[file.absolutePath + '/build/classes/java/main' /*, file.absolutePath + '/build/classes/java/test'*/ ] + jars)
-			// test holds generated test classes
-			]
-			builder.launch // does all the indexing ...
-		} else {
-			addToIndex(file)
 		}
 	}
 
@@ -168,11 +134,7 @@ class IndexUpdater {
 		val file = new File(parent, child)
 		return getAbsoluteFileURI(file)
 	}
-
-	def setLanguageSetups(List<ISetup> setups) {
-		languageSetups = setups
-	}
-
+	
 	/** partial copy of LanguageAccessFactory */
 	private def Map<String, LanguageAccess> createLanguageAccess(List<? extends ISetup> languageSetups) {
 		val result = newHashMap

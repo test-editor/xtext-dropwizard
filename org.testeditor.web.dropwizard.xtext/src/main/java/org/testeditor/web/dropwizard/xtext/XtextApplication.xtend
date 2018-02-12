@@ -10,21 +10,19 @@ import javax.inject.Inject
 import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.xtext.ISetup
 import org.eclipse.xtext.XtextRuntimeModule
+import org.eclipse.xtext.builder.standalone.IIssueHandler
+import org.eclipse.xtext.builder.standalone.IIssueHandler.DefaultIssueHandler
+import org.eclipse.xtext.builder.standalone.compiler.EclipseJavaCompiler
+import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
 import org.eclipse.xtext.common.TerminalsStandaloneSetup
+import org.eclipse.xtext.generator.AbstractFileSystemAccess
+import org.eclipse.xtext.generator.JavaIoFileSystemAccess
 import org.testeditor.web.dropwizard.DropwizardApplication
 import org.testeditor.web.xtext.index.XtextIndexModule
 import org.testeditor.web.xtext.index.persistence.GitService
 import org.testeditor.web.xtext.index.persistence.IndexUpdater
 import org.testeditor.web.xtext.index.persistence.webhook.BitbucketWebhookResource
-import org.eclipse.xtext.generator.AbstractFileSystemAccess
-// import org.eclipse.xtext.xbase.testing.RegisteringFileSystemAccess
-import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
-import org.eclipse.xtext.builder.standalone.compiler.EclipseJavaCompiler
-import org.eclipse.xtext.builder.standalone.IIssueHandler
-import org.eclipse.xtext.builder.standalone.IIssueHandler.DefaultIssueHandler
-import org.eclipse.xtext.generator.JavaIoFileSystemAccess
-import org.testeditor.web.xtext.index.CustomWebResourceSetProvider
-import org.eclipse.xtext.web.server.model.IWebResourceSetProvider
+import org.testeditor.web.xtext.index.persistence.GradleProjectIndexUpdater
 
 abstract class XtextApplication<T extends XtextConfiguration> extends DropwizardApplication<T> {
 
@@ -43,7 +41,7 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 			binder.bind(AbstractFileSystemAccess).to(JavaIoFileSystemAccess).asEagerSingleton
 			binder.bind(IJavaCompiler).to(EclipseJavaCompiler)
 			binder.bind(IIssueHandler).to(DefaultIssueHandler)
-			// binder.bind(IWebResourceSetProvider).to(CustomWebResourceSetProvider).asEagerSingleton // make sure to always use the same resource set
+			binder.bind(IndexUpdater).to(GradleProjectIndexUpdater)
 		]
 		modules += new XtextRuntimeModule
 	}
@@ -55,21 +53,19 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 		// see ExampleXtextApplicationIntegrationTest.serializingContentAssistEntryWorksEvenIfEObjectIsPresent and https://stackoverflow.com/a/38956032/1839228
 		environment.objectMapper.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)
 
-		runLanguageSetups(configuration, environment)
+		prepareLanguageSetups(configuration, environment)
 		initializeXtextIndex(configuration, environment)
 		configureXtextServiceResource(configuration, environment)
 		configureWebhooks(configuration, environment)
 	}
 
-	protected def void runLanguageSetups(T configuration, Environment environment) {
-		val setups = getLanguageSetups(indexModule)
-		indexUpdater.setLanguageSetups(setups)
-		// setups.forEach[createInjectorAndDoEMFRegistration()]
+	protected def void prepareLanguageSetups(T configuration, Environment environment) {
+		indexUpdater.initLanguages(getLanguageSetups(indexModule))
 	}
 
 	protected def void initializeXtextIndex(T configuration, Environment environment) {
 		gitService.init(configuration.localRepoFileRoot, configuration.remoteRepoUrl, configuration.privateKeyLocation, configuration.knownHostsLocation)
-		indexUpdater.initIndexWithGradleRoot(new File(configuration.localRepoFileRoot))
+		indexUpdater.initIndex(new File(configuration.localRepoFileRoot))
 	}
 
 	protected def void configureXtextServiceResource(T configuration, Environment environment) {
