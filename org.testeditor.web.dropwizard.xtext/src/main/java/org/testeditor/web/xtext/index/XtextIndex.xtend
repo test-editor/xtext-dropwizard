@@ -31,6 +31,7 @@ class XtextIndex extends ResourceSetBasedResourceDescriptions {
 		super.context = resourceSet
 	}
 	
+	/** used by the custom standalone builder to write the collected information into this index */
 	def void init(ResourceDescriptionsData newData, XtextResourceSet resourceSet) {
 		data = new ResourceDescriptionsData(emptyList)
 		super.context = resourceSet

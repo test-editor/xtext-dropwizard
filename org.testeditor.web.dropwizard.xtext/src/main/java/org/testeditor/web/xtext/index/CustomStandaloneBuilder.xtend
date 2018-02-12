@@ -14,30 +14,20 @@ import static extension org.eclipse.xtend.lib.annotations.AccessorType.*
  * derived from StandaloneBuilder, initializing the custom xtext index when builder has built the resource set
  * and the resource descriptions data  
  */
- @Singleton
+@Singleton
 class CustomStandaloneBuilder extends StandaloneBuilder {
 
-	@Accessors(AccessorType.PUBLIC_GETTER)	
+	@Accessors(AccessorType.PUBLIC_GETTER)
 	@Inject XtextIndex index
-	
+
+	/** make sure to initialize index with collected resourceSet and indexData */
 	override protected installIndex(XtextResourceSet resourceSet, ResourceDescriptionsData indexData) {
 		super.installIndex(resourceSet, indexData)
 		index.init(indexData, resourceSet)
 	}
-	
+
 	def XtextResourceSet getResourceSet() {
 		return index.resourceSet as XtextResourceSet
-	}
-	
-	def CustomStandaloneBuilder configureSourcePaths(String rootPath, String ... paths) {
-		baseDir = rootPath
-		sourceDirs = paths
-		return this
-	}
-
-	def CustomStandaloneBuilder configureClassPathEntries(String ... classpathEntries) {
-		classPathEntries = classpathEntries
-		return this
 	}
 
 }

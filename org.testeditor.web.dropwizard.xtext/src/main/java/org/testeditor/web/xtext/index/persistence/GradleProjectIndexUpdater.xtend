@@ -29,8 +29,9 @@ class GradleProjectIndexUpdater extends IndexUpdater {
 			prepareGradleTask(file)
 			val jars = collectClasspathJarsViaGradle(file)
 			builder => [
-				configureSourcePaths(file.absolutePath + "/src/main/java", file.absolutePath + '/src/test/java')
-				configureClassPathEntries(jars + #[file.absolutePath + '/build/classes/java/main'])
+				baseDir = file.absolutePath
+				sourceDirs = #[file.absolutePath + "/src/main/java", file.absolutePath + '/src/test/java']
+				classPathEntries = jars + #[file.absolutePath + '/build/classes/java/main']
 			]
 			builder.launch // does all the indexing ...
 		} else {
@@ -38,7 +39,7 @@ class GradleProjectIndexUpdater extends IndexUpdater {
 		}
 	}
 
-	/** make sure the taks 'printTestClasspath' exists */
+	/** make sure the task 'printTestClasspath' exists */
 	private def void prepareGradleTask(File repoRoot) {
 		val process = new ProcessBuilder('./gradlew', 'tasks', '--all').directory(repoRoot).start
 		logger.info('running gradle tasks.')
@@ -58,7 +59,7 @@ class GradleProjectIndexUpdater extends IndexUpdater {
 		}
 	}
 
-	/** execute taks 'assemble' and wait until done */
+	/** execute task 'assemble' and wait until done */
 	private def void runGradleAssemble(File repoRoot) {
 		val process = new ProcessBuilder('./gradlew', 'assemble').directory(repoRoot).inheritIO.start
 		logger.info('running gradle assemble.')

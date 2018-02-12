@@ -53,8 +53,9 @@ class XtextIndexTest extends AbstractTestWithExampleLanguage {
 				createLanguageConfiguration(MyDslStandaloneSetup),
 				createLanguageConfiguration(XtendStandaloneSetup)
 			], class.classLoader)
-			configureSourcePaths(tmpFolder.root.absolutePath)
-			configureClassPathEntries(jarFilename)
+			baseDir = tmpFolder.root.absolutePath
+			sourceDirs = #[]
+			classPathEntries = #[jarFilename]
 		]
 
 		// when
