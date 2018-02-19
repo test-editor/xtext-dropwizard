@@ -16,26 +16,26 @@ import org.slf4j.LoggerFactory
 @Singleton
 class GradleProjectIndexUpdater extends IndexUpdater {
 	
+	static val GRADLE_PROCESS_TIMEOUT_MINUTES = 10
+
 	static val logger = LoggerFactory.getLogger(GradleProjectIndexUpdater)
 
-	@Inject CustomStandaloneBuilder builder
-	
-	static val GRADLE_PROCESS_TIMEOUT = 10 -> TimeUnit.MINUTES
+	@Inject CustomStandaloneBuilder builder	
 
-	override def void initIndex(File file) {
+	override def void initIndex(File projectRoot) {
 		builder.languages = languageAccessors
-		if (new File(file.absolutePath, 'build.gradle').exists) {
-			runGradleAssemble(file)
-			prepareGradleTask(file)
-			val jars = collectClasspathJarsViaGradle(file)
+		if (new File(projectRoot.absolutePath, 'build.gradle').exists) {
+			runGradleAssemble(projectRoot)
+			prepareGradleTask(projectRoot)
+			val jars = collectClasspathJarsViaGradle(projectRoot)
 			builder => [
-				baseDir = file.absolutePath
-				sourceDirs = #[file.absolutePath + "/src/main/java", file.absolutePath + '/src/test/java']
-				classPathEntries = jars + #[file.absolutePath + '/build/classes/java/main']
+				baseDir = projectRoot.absolutePath
+				sourceDirs = #[baseDir + "/src/main/java", baseDir + '/src/test/java']
+				classPathEntries = jars + #[baseDir + '/build/classes/java/main']
 			]
 			builder.launch // does all the indexing ...
 		} else {
-			super.initIndex(file)
+			super.initIndex(projectRoot)
 		}
 	}
 
@@ -43,7 +43,7 @@ class GradleProjectIndexUpdater extends IndexUpdater {
 	private def void prepareGradleTask(File repoRoot) {
 		val process = new ProcessBuilder('./gradlew', 'tasks', '--all').directory(repoRoot).start
 		logger.info('running gradle tasks.')
-		process.waitFor(GradleProjectIndexUpdater.GRADLE_PROCESS_TIMEOUT.key, GradleProjectIndexUpdater.GRADLE_PROCESS_TIMEOUT.value) // allow for downloads and the like
+		process.waitFor(GRADLE_PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES) // allow for downloads and the like
 		val completeOutput = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8))
 		logger.info(completeOutput.join('\n'))
 		val hasPrintTestClasspathTask = completeOutput.exists['printTestClasspath'.equals(it)]
@@ -63,13 +63,13 @@ class GradleProjectIndexUpdater extends IndexUpdater {
 	private def void runGradleAssemble(File repoRoot) {
 		val process = new ProcessBuilder('./gradlew', 'assemble').directory(repoRoot).inheritIO.start
 		logger.info('running gradle assemble.')
-		process.waitFor(GradleProjectIndexUpdater.GRADLE_PROCESS_TIMEOUT.key, GradleProjectIndexUpdater.GRADLE_PROCESS_TIMEOUT.value) // allow for downloads and the like
+		process.waitFor(GRADLE_PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES) // allow for downloads and the like
 	}
 
 	private def Iterable<String> collectClasspathJarsViaGradle(File repoRoot) {
 		val process = new ProcessBuilder('./gradlew', 'printTestClasspath').directory(repoRoot).start
 		logger.info('running gradle printTestClasspath.')
-		process.waitFor(GradleProjectIndexUpdater.GRADLE_PROCESS_TIMEOUT.key, GradleProjectIndexUpdater.GRADLE_PROCESS_TIMEOUT.value) // allow for downloads and the like
+		process.waitFor(GRADLE_PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES) // allow for downloads and the like
 		val jars = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8)).filter[startsWith('/')].filter[endsWith('.jar')]
 		logger.info('found the following classpath entries:\n' + jars.join('\n'))
 		return jars

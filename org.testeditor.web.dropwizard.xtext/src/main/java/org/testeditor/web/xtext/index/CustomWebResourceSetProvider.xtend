@@ -10,6 +10,7 @@ class CustomWebResourceSetProvider implements IWebResourceSetProvider {
 
 	val XtextIndex index
 
+	// no injection used here because this is called during guice module setup
 	new(XtextIndex newIndex) {
 		index = newIndex
 	}
