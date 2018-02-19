@@ -24,3 +24,13 @@ Provides xtext services with index integration.
 
 Provides testing utilities allowing for unit and integration tests of dsls.
 
+# Release process
+
+* switch to the master branch
+* execute `./gradlew release` 
+* enter this release version
+* enter the next version 
+
+The branch will be tagged accordingly and the travis build will make sure that the released version artifacts are uploaded. 
+
+The next version will be put into `gradle.properties` and this change will be committed.
