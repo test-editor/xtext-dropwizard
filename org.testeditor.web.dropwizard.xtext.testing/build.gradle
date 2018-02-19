@@ -1,3 +1,4 @@
 dependencies {
     compile project(':org.testeditor.web.dropwizard.testing')
+    compile "org.eclipse.xtext:org.eclipse.xtext.xbase.testing:$versions.xtext"
 }

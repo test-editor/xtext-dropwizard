@@ -12,8 +12,21 @@ import static javax.ws.rs.core.Response.Status.*
 class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationTest {
    
 	override protected initializeRemoteRepository(Git git, File parent) {
-		write(parent, 'Demo.mydsl', 'Hello Peter!')
-		addAndCommit(git, 'Demo.mydsl', 'Add MyDsl.xtext as an example')
+		write(parent, 'build.gradle', '''apply plugin: 'java' ''')
+		addAndCommit(git, 'build.gradle', 'Add build.gradle')
+		write(parent, 'gradlew', '''
+			#!/bin/bash
+			echo "running dummy gradle ..."
+			if [ "$1" == "tasks" ]; then
+			  echo "printTestClasspath"
+			elif [ "$1" == "printTestClasspath" ]; then
+			  echo "«parent.absolutePath»/mydsl.jar"
+			fi
+		''')
+		new File(parent, 'gradlew').executable = true
+		addAndCommit(git, 'gradlew', 'Add dummy gradlew')
+		write(parent, 'src/test/java/Demo.mydsl', 'Hello Peter!')
+		addAndCommit(git, 'src/test/java/Demo.mydsl', 'Add MyDsl.xtext as an example')
 	}
 
 	@Test
