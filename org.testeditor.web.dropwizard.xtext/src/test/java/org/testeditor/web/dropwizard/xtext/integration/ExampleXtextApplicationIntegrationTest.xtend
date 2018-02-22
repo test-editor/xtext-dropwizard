@@ -11,6 +11,8 @@ import static javax.ws.rs.core.Response.Status.*
 
 class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationTest {
    
+   static val fileWithError = 'src/test/java/Broken.mydsl'
+   
 	override protected initializeRemoteRepository(Git git, File parent) {
 		write(parent, 'build.gradle', '''apply plugin: 'java' ''')
 		addAndCommit(git, 'build.gradle', 'Add build.gradle')
@@ -27,6 +29,9 @@ class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationT
 		addAndCommit(git, 'gradlew', 'Add dummy gradlew')
 		write(parent, 'src/test/java/Demo.mydsl', 'Hello Peter!')
 		addAndCommit(git, 'src/test/java/Demo.mydsl', 'Add MyDsl.xtext as an example')
+		
+		write(parent, fileWithError, 'Helo Typo!')
+		addAndCommit(git, fileWithError, 'add file with syntax error')
 	}
 
 	@Test
@@ -59,6 +64,23 @@ class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationT
 		// then
 		asJson.contains('"description":"MyFancyDescription"').assertTrue
 		asJson.contains('"source":').assertFalse
+	}
+	
+	
+	@Test
+	def void canRetrieveValidationMarkersFromIndex() {
+		// given
+		val parent = remoteRepoTemporaryFolder.root;
+		val fileWithError = 'src/test/java/Broken.mydsl'
+		write(parent, fileWithError, 'Helo Typo!')
+		addAndCommit(remoteGit, fileWithError, 'add file with syntax error')
+		
+		// when
+		val response = createValidationMarkerRequest(fileWithError).submit.get
+
+		// then
+		response.status.assertEquals(OK.statusCode)
+		response.readEntity(String).assertEquals('[{"path":"src/test/java/Broken.mydsl","errors":1,"warnings":0,"infos":0}]')
 	}
 
 }
