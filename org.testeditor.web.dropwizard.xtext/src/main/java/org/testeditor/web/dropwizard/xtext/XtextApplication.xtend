@@ -24,6 +24,8 @@ import org.testeditor.web.xtext.index.persistence.GitService
 import org.testeditor.web.xtext.index.persistence.GradleProjectIndexUpdater
 import org.testeditor.web.xtext.index.persistence.IndexUpdater
 import org.testeditor.web.xtext.index.persistence.webhook.BitbucketWebhookResource
+import javax.ws.rs.core.Response.ResponseBuilder
+import javax.ws.rs.core.Response
 
 abstract class XtextApplication<T extends XtextConfiguration> extends DropwizardApplication<T> {
 
@@ -44,6 +46,7 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 			binder.bind(IJavaCompiler).to(EclipseJavaCompiler)
 			binder.bind(IIssueHandler).to(ValidationMarkerUpdater)
 			binder.bind(IndexUpdater).to(GradleProjectIndexUpdater)
+			binder.bind(ResponseBuilder).toProvider[Response.ok]
 		]
 		modules += new XtextRuntimeModule
 	}

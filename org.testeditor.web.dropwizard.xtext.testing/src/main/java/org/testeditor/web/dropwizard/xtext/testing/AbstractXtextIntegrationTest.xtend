@@ -78,4 +78,14 @@ abstract class AbstractXtextIntegrationTest<C extends Configuration> extends Abs
 		val url = 'validation-markers?resource=' + resourceId
 		return createRequest(url).buildGet()
 	}
+	
+	protected def Invocation createValidationMarkerUpdateRequest() {
+		val url = 'validation-markers/updates'
+		return createRequest(url).buildGet()
+	}
+	
+	protected def Invocation createValidationMarkerUpdateRequest(long lastAccessed) {
+		val url = '''validation-markers/updates?lastAccessed=«lastAccessed»'''
+		return createRequest(url).buildGet()
+	}
 }

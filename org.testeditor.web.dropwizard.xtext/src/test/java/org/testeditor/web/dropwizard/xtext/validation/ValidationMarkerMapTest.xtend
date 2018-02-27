@@ -77,18 +77,15 @@ class ValidationMarkerMapTest {
 			new ValidationSummary('another/path', 42, 23, 3)
 		]
 		unitUnderTest.updateMarkers(initialContent)
-		unitUnderTest.waitForUpdatedMarkers('session', 100)
+		unitUnderTest.waitForUpdatedMarkers(-1, 100)
+		val lastUpdatedBefore = unitUnderTest.lastUpdated
 
 		// when
 		unitUnderTest.updateMarkers(null)
 
 		// then
 		assertThat(unitUnderTest.allMarkers).containsExactlyInAnyOrder(initialContent)
-		try {
-			unitUnderTest.waitForUpdatedMarkers('session', 50)
-			fail('Expected operation to time out')
-		} catch (TimeoutException e) {
-		}
+		assertThat(unitUnderTest.lastUpdated).isEqualTo(lastUpdatedBefore)
 	}
 
 	@Test
@@ -98,11 +95,12 @@ class ValidationMarkerMapTest {
 		val session = 'session'
 		val unitUnderTest = new ValidationMarkerMap()
 		unitUnderTest.updateMarkers(#[])
-		unitUnderTest.waitForUpdatedMarkers(session, 100)
+		unitUnderTest.waitForUpdatedMarkers(-1, 100)
 		val expected = #[new ValidationSummary('path', 1, 2, 3)]
+		val upToDate = System.currentTimeMillis + 5000L
 
 		// when
-		val actual = scheduler.schedule([unitUnderTest.waitForUpdatedMarkers(session, 2000)], 1, TimeUnit.MILLISECONDS)
+		val actual = scheduler.schedule([unitUnderTest.waitForUpdatedMarkers(upToDate, 2000)], 1, TimeUnit.MILLISECONDS)
 		scheduler.schedule([unitUnderTest.updateMarkers(expected)], 10, TimeUnit.MILLISECONDS).get
 
 		// then
@@ -113,18 +111,16 @@ class ValidationMarkerMapTest {
 	def void multipleClientswaitForFutureCompletionIfUpToDate() {
 		// given
 		val scheduler = Executors.newScheduledThreadPool(4)
-		val sessions = #['session1', 'session2', 'session3', 'session4']
 		val unitUnderTest = new ValidationMarkerMap()
 		unitUnderTest.updateMarkers(#[])
-		sessions.forEach[session|unitUnderTest.waitForUpdatedMarkers(session, 100)]
 
 		val firstUpdate = #[new ValidationSummary('path', 1, 2, 3)]
 		val secondUpdate = #[new ValidationSummary('different/path', 1, 2, 3)]
 		val ScheduledFuture<Iterable<ValidationSummary>>[] actualFutures = newArrayOfSize(4)
-		actualFutures.set(0, scheduler.schedule([unitUnderTest.waitForUpdatedMarkers(sessions.get(0), 2000)], 1, TimeUnit.MILLISECONDS))
-		actualFutures.set(1, scheduler.schedule([unitUnderTest.waitForUpdatedMarkers(sessions.get(1), 2000)], 1, TimeUnit.MILLISECONDS))
-		actualFutures.set(2, scheduler.schedule([unitUnderTest.waitForUpdatedMarkers(sessions.get(2), 2000)], 1, TimeUnit.MILLISECONDS))
-		actualFutures.set(3, scheduler.schedule([unitUnderTest.waitForUpdatedMarkers(sessions.get(3), 2000)], 250, TimeUnit.MILLISECONDS))
+		actualFutures.set(0, scheduler.schedule([unitUnderTest.waitForUpdatedMarkers(-1L, 2000)], 1, TimeUnit.MILLISECONDS))
+		actualFutures.set(1, scheduler.schedule([unitUnderTest.waitForUpdatedMarkers(-1L, 2000)], 1, TimeUnit.MILLISECONDS))
+		actualFutures.set(2, scheduler.schedule([unitUnderTest.waitForUpdatedMarkers(-1L, 2000)], 1, TimeUnit.MILLISECONDS))
+		actualFutures.set(3, scheduler.schedule([unitUnderTest.waitForUpdatedMarkers(-1L, 2000)], 250, TimeUnit.MILLISECONDS))
 		val firstUpdateFuture = scheduler.schedule([unitUnderTest.updateMarkers(firstUpdate)], 100, TimeUnit.MILLISECONDS)
 		val secondUpdateFuture = scheduler.schedule([unitUnderTest.updateMarkers(secondUpdate)], 200, TimeUnit.MILLISECONDS)
 
@@ -141,7 +137,7 @@ class ValidationMarkerMapTest {
 		assertThat(actualFutures.get(2).get).containsAll(secondUpdate)
 		actualFutures.get(3).get
 		try {
-			unitUnderTest.waitForUpdatedMarkers(sessions.get(3), 50)
+			unitUnderTest.waitForUpdatedMarkers(System.currentTimeMillis + 5000, 50)
 			fail('Expected operation to time out')
 		} catch (TimeoutException e) {
 		}

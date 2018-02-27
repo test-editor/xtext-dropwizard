@@ -4,6 +4,7 @@ import java.util.concurrent.TimeoutException
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.servlet.http.HttpServletRequest
+import javax.ws.rs.DefaultValue
 import javax.ws.rs.GET
 import javax.ws.rs.Path
 import javax.ws.rs.Produces
@@ -23,8 +24,9 @@ class ValidationMarkerResource {
 
 	@Inject ValidationMarkerMap markerMap
 	@Inject Provider<ResponseBuilder> responseBuilderProvider
+	@Context HttpServletRequest request
 
-	private static val LONG_POLLING_TIMEOUT_MILLIS = 5000
+	private static val LONG_POLLING_TIMEOUT_MILLIS = 4000
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
@@ -40,12 +42,16 @@ class ValidationMarkerResource {
 	@Path('updates')
 	@Produces(MediaType.APPLICATION_JSON)
 	@ManagedAsync
-	def void waitForValidationUpdates(@Context HttpServletRequest request, @Suspended AsyncResponse response) {
+	def void waitForValidationUpdates(@Suspended AsyncResponse response, @DefaultValue('-1') @QueryParam('lastAccessed') long lastAccessed) {
 		try {
-			val markers = markerMap.waitForUpdatedMarkers(request.session.id, LONG_POLLING_TIMEOUT_MILLIS)
-			response.resume(responseBuilderProvider.get.status(OK).entity(markers).build)
+			val markers = markerMap.waitForUpdatedMarkers(lastAccessed, LONG_POLLING_TIMEOUT_MILLIS)
+			response.resume(
+				responseBuilderProvider.get.status(OK).entity(markers).header('lastAccessed', System.currentTimeMillis).build
+			)
 		} catch (TimeoutException ex) {
-			response.resume(responseBuilderProvider.get.status(NO_CONTENT).build)
+			response.resume(
+				responseBuilderProvider.get.status(NO_CONTENT).header('lastAccessed', System.currentTimeMillis).build
+			)
 		}
 	}
 

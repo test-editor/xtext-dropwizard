@@ -11,14 +11,15 @@ import static java.util.concurrent.TimeUnit.*
 
 @Singleton
 class ValidationMarkerMap {
-
-	static val SESSION_UPDATE_CACHE_TIMEOUT_SECONDS = 5 * 60
 	static val logger = LoggerFactory.getLogger(ValidationMarkerUpdater)
 
 	val validationMarkers = new ConcurrentHashMap<String, ValidationSummary>()
 	val lastUpdated = new AtomicLong(System.currentTimeMillis)
-	val sessionUpdated = CacheBuilder.newBuilder.expireAfterAccess(SESSION_UPDATE_CACHE_TIMEOUT_SECONDS, SECONDS).<String, Long>build
 	var futureUpdate = new CompletableFuture<Iterable<ValidationSummary>>()
+	
+	def long getLastUpdated() {
+		return lastUpdated.get
+	}
 
 	def void updateMarkers(Iterable<ValidationSummary> summaries) {
 		if (summaries !== null && summaries.length > 0) {
@@ -26,6 +27,8 @@ class ValidationMarkerMap {
 			summaries.forEach[summary|validationMarkers.put(summary.path, summary)]
 			futureUpdate = new CompletableFuture<Iterable<ValidationSummary>>()
 			currentUpdate.complete(allMarkers)
+			val now = System.currentTimeMillis
+			logger.info('''Validation markers were updated (timestamp: «now»)''')
 			lastUpdated.set(System.currentTimeMillis)
 		}
 	}
@@ -43,19 +46,19 @@ class ValidationMarkerMap {
 		return validationMarkers.values
 	}
 
-	def waitForUpdatedMarkers(String session, long timeoutMillis) {
+	def waitForUpdatedMarkers(long lastAccessed, long timeoutMillis) {
 		var Iterable<ValidationSummary> result
-		result = if (session.isUpToDate) {
+		result = if (isUpToDateSince(lastAccessed)) {
 			futureUpdate.get(timeoutMillis, MILLISECONDS)
 		} else {
 			allMarkers
 		}
-		sessionUpdated.put(session, System.currentTimeMillis)
 		return result
 	}
 
-	private def isUpToDate(String session) {
-		return sessionUpdated.asMap.getOrDefault(session, -1L) >= lastUpdated.get
+	private def isUpToDateSince(long lastAccessed) {
+		logger.info('''validation was last updated at "«lastUpdated.get»", last checked for updates at "«lastAccessed»"''')
+		return lastAccessed >= lastUpdated.get
 	}
 
 }

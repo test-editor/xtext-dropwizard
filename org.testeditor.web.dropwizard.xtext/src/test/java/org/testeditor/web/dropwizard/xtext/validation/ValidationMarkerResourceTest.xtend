@@ -51,6 +51,7 @@ class ValidationMarkerResourceTest extends AbstractTestWithExampleLanguage {
 		when(responseBuilderProvider.get).thenReturn(responseBuilder)
 		when(responseBuilder.status(any)).thenReturn(responseBuilder)
 		when(responseBuilder.entity(any)).thenReturn(responseBuilder)
+		when(responseBuilder.header(any, any)).thenReturn(responseBuilder)
 		when(responseBuilder.build).thenReturn(dummyResponse)
 	}
 
@@ -93,13 +94,12 @@ class ValidationMarkerResourceTest extends AbstractTestWithExampleLanguage {
 	@Test
 	def void waitsForValidationUpdateAndReturnsAllSummaries() {
 		// given
-		val session = 'session'
-		val mockRequest = mockRequest(session)
+		val neverAccessed = -1L
 		val mockResponse = mock(AsyncResponse)
-		when(markerMap.waitForUpdatedMarkers(eq(session), anyLong)).thenReturn(expectedSummaries)
+		when(markerMap.waitForUpdatedMarkers(eq(neverAccessed), anyLong)).thenReturn(expectedSummaries)
 
 		// when
-		unitUnderTest.waitForValidationUpdates(mockRequest, mockResponse)
+		unitUnderTest.waitForValidationUpdates(mockResponse, neverAccessed)
 
 		// then
 		val actualEntity = ArgumentCaptor.forClass(Object);
@@ -116,13 +116,12 @@ class ValidationMarkerResourceTest extends AbstractTestWithExampleLanguage {
 	@Test
 	def void waitForValidationUpdatesReturnsNoContentOnTimeout() {
 		// given
-		val session = 'session'
-		val mockRequest = mockRequest(session)
+		val accessedInFuture = System.currentTimeMillis + 5000L
 		val mockResponse = mock(AsyncResponse)
-		when(markerMap.waitForUpdatedMarkers(eq(session), anyLong)).thenThrow(TimeoutException)
+		when(markerMap.waitForUpdatedMarkers(eq(accessedInFuture), anyLong)).thenThrow(TimeoutException)
 
 		// when
-		unitUnderTest.waitForValidationUpdates(mockRequest, mockResponse)
+		unitUnderTest.waitForValidationUpdates(mockResponse, accessedInFuture)
 
 		// then
 		val actualStatus = ArgumentCaptor.forClass(Response.Status);
@@ -132,14 +131,6 @@ class ValidationMarkerResourceTest extends AbstractTestWithExampleLanguage {
 		verify(responseBuilder, never).entity(nullable(Object))
 
 		assertThat(actualStatus.value).isEqualTo(NO_CONTENT)
-	}
-
-	private def mockRequest(String session) {
-		val mockRequest = mock(HttpServletRequest)
-		val mockSession = mock(HttpSession)
-		when(mockRequest.session).thenReturn(mockSession)
-		when(mockSession.id).thenReturn(session)
-		return mockRequest
 	}
 
 }
