@@ -12,6 +12,31 @@ import org.eclipse.xtext.builder.standalone.IIssueHandler
 import org.eclipse.xtext.validation.Issue
 import org.slf4j.LoggerFactory
 
+
+/**
+ * Collects and summarizes validation issues on a per-resource-basis.
+ * 
+ * This class is an {@link org.eclipse.xtext.builder.standalone.IIssueHandler},
+ * so when bound via Guice, it will be used by the {@link org.eclipse.xtext.builder.standalone.StandaloneBuilder}
+ * as a callback invoked after validating each resource.
+ * 
+ * This updater in turn sends the summarized validation results to a
+ * {@link org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerMap},
+ * but only after the builder has finished validating all resources. Since the
+ * latter does not offer appropriate callback hooks, 
+ * {@link org.testeditor.web.xtext.index.CustomStandaloneBuilder} extends that
+ * class, and calls this updater's {@link #updateMarkerMap) after the build is
+ * complete.
+ * 
+ * While the mode of usage by the builder means that all issues passed to 
+ * {@link #handleIssue} will refer to the same resource, the method is, in
+ * theory, able to handle a mixed set of issues belonging to arbitrary
+ * resources. Unfortunately, not all validators produce issues with a non-null
+ * resource URI set, so as a fallback, the context resource can be explicitly
+ * set with {@link #setContext}, and its URI will be used to construct a
+ * resource path string for any issue that lacks the necessary information
+ * itself. 
+ */
 @Singleton
 class ValidationMarkerUpdater implements IIssueHandler {
 
