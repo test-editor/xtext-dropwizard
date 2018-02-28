@@ -11,7 +11,7 @@ import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.xtext.builder.standalone.IIssueHandler
 import org.eclipse.xtext.validation.Issue
 import org.slf4j.LoggerFactory
-
+import java.io.File
 
 /**
  * Collects and summarizes validation issues on a per-resource-basis.
@@ -50,7 +50,7 @@ class ValidationMarkerUpdater implements IIssueHandler {
 	var Resource currentResource
 
 	def void init(String rootDirectory) {
-		this.rootDirectory = Paths.get(rootDirectory)
+		this.rootDirectory = new File(rootDirectory).absoluteFile.toPath
 	}
 
 	def setContext(Resource resource) {
