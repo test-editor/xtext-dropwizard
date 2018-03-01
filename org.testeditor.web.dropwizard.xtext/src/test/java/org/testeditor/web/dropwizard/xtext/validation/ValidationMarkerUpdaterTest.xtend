@@ -36,8 +36,7 @@ class ValidationMarkerUpdaterTest {
 	@Parameters(name = '{0}')
 	static def Iterable<Object[]> testVectors() {
 		return #[
-			#['should handle "null" with default behavior', null, null],
-			#['should handle empty issue list with default behavior', #[], null],
+			#['should handle empty issue list with default behavior', #[], #[]],
 			#['should add up error issues for single resource', 
 				nCopies(10, issueFor(sampleURI, ERROR)), #[new ValidationSummary(samplePath, 10, 0, 0)]
 			],
@@ -99,12 +98,9 @@ class ValidationMarkerUpdaterTest {
 		markerUpdaterUnderTest.updateMarkerMap
 
 		// then
-		if (givenIssues !== null && givenIssues.length > 0) {
-			verify(markerMap).updateMarkers(actualSummaries.capture())
-			assertThat(actualSummaries.value).containsExactlyInAnyOrder(expectedSummaries)
-		} else {
-			verify(markerMap, never).updateMarkers(any)
-		}
+		verify(markerMap).updateMarkers(actualSummaries.capture())
+		assertThat(actualSummaries.value).containsExactlyInAnyOrder(expectedSummaries)
+
 		verify(defaultHandler).handleIssue(actualIssues.capture())
 		assertThat(actualIssues.value).isSameAs(givenIssues)
 	}

@@ -1,0 +1,6 @@
+{
+	"path": "sample/path",
+	"errors": 1,
+	"warnings": 2,
+	"infos": 3
+}

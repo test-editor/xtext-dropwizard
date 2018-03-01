@@ -53,29 +53,25 @@ class ValidationMarkerUpdater implements IIssueHandler {
 		this.rootDirectory = new File(rootDirectory).absoluteFile.toPath
 	}
 
-	def setContext(Resource resource) {
+	def void setContext(Resource resource) {
 		currentResource = resource
 	}
 
-	override handleIssue(Iterable<Issue> issues) {
-		if (issues !== null && issues.length > 0) {
-			issues.forEach [
-				val path = uriToProblem.resourcePath
-				if (path !== null) {
-					previouslyCollectedSummary(path).incrementFor(it)
-				} else {
-					logger.warn('''Could not determine resource path for issue: «it»''')
-				}
-			]
-		}
+	override boolean handleIssue(Iterable<Issue> issues) {
+		issues?.forEach [
+			val path = uriToProblem.resourcePath
+			if (path !== null) {
+				previouslyCollectedSummary(path).incrementFor(it)
+			} else {
+				logger.warn('''Could not determine resource path for issue: «it»''')
+			}
+		]
 		return delegateForDefaultBehavior.handleIssue(issues)
 	}
 
-	def updateMarkerMap() {
-		if (!collectedValidationSummaries.empty) {
-			updateMarkers(new ArrayList(collectedValidationSummaries.values))
-			collectedValidationSummaries.clear
-		}
+	def void updateMarkerMap() {
+		updateMarkers(new ArrayList(collectedValidationSummaries.values))
+		collectedValidationSummaries.clear
 	}
 
 	private def previouslyCollectedSummary(String path) {

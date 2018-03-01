@@ -86,7 +86,6 @@ class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationT
 	@Test
 	def void providesAllValidationMarkersOnUpdate() {
 		// given
-		val testStartTime = System.currentTimeMillis
 		val parent = remoteRepoTemporaryFolder.root;
 		val fileWithError = 'src/test/java/Broken.mydsl'
 		write(parent, fileWithError, 'Helo Typo!')
@@ -98,8 +97,6 @@ class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationT
 		// then
 		response.status.assertEquals(OK.statusCode)
 		response.readEntity(String).assertEquals('[{"path":"src/test/java/Broken.mydsl","errors":1,"warnings":0,"infos":0}]')
-		response.headers.containsKey('lastAccessed').assertTrue
-		assertTrue(Long.parseLong(response.headers.getFirst('lastAccessed') as String) >= testStartTime)
 	}
 	
 	@Test
@@ -116,33 +113,19 @@ class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationT
 
 		// then
 		response.status.assertEquals(NO_CONTENT.statusCode)
+	}
+
+	@Test
+	def void carriesLastAccessedHeaderField() {
+		// given
+		val testStartTime = System.currentTimeMillis
+		
+		// when
+		val response = createValidationMarkerUpdateRequest.submit.get
+
+		// then
 		response.headers.containsKey('lastAccessed').assertTrue
 		assertTrue(Long.parseLong(response.headers.getFirst('lastAccessed') as String) >= testStartTime)
 	}
-	/**
-	 * 	@Test
-	def void testThatSuccessStatusIsReturned() {
-		// given
-		val testFile = 'test.tcl'
-		workspaceRoot.newFolder(userId)
-		workspaceRoot.newFile(userId + '/' + testFile)
-		workspaceRoot.newFile(userId + '/gradlew') => [
-			executable = true
-			JGitTestUtil.write(it, '''
-				#!/bin/sh
-				echo "test was run" > test.ok.txt
-			''')
-		]
-		val executionResponse = createTestExecutionRequest(testFile).post(null)
-		assertThat(executionResponse.status).isEqualTo(Status.CREATED.statusCode)
-
-		// when
-		val actualTestStatus = createAsyncTestStatusRequest(testFile).get
-
-		// then
-		assertThat(actualTestStatus.readEntity(String)).isEqualTo('SUCCESS')
-
-	}
-	 */
 
 }

@@ -96,7 +96,7 @@ class ValidationMarkerResourceTest extends AbstractTestWithExampleLanguage {
 		// given
 		val neverAccessed = -1L
 		val mockResponse = mock(AsyncResponse)
-		when(markerMap.waitForUpdatedMarkers(eq(neverAccessed), anyLong)).thenReturn(expectedSummaries)
+		when(markerMap.waitForAnyNewMarkersSince(eq(neverAccessed), anyLong)).thenReturn(expectedSummaries)
 
 		// when
 		unitUnderTest.waitForValidationUpdates(mockResponse, neverAccessed)
@@ -118,7 +118,7 @@ class ValidationMarkerResourceTest extends AbstractTestWithExampleLanguage {
 		// given
 		val accessedInFuture = System.currentTimeMillis + 5000L
 		val mockResponse = mock(AsyncResponse)
-		when(markerMap.waitForUpdatedMarkers(eq(accessedInFuture), anyLong)).thenThrow(TimeoutException)
+		when(markerMap.waitForAnyNewMarkersSince(eq(accessedInFuture), anyLong)).thenThrow(TimeoutException)
 
 		// when
 		unitUnderTest.waitForValidationUpdates(mockResponse, accessedInFuture)
