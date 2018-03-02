@@ -2,11 +2,13 @@ package org.testeditor.web.xtext.index
 
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.xtend.lib.annotations.AccessorType
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.eclipse.xtext.builder.standalone.StandaloneBuilder
 import org.eclipse.xtext.resource.XtextResourceSet
 import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
+import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
 
 import static extension org.eclipse.xtend.lib.annotations.AccessorType.*
 
@@ -28,6 +30,18 @@ class CustomStandaloneBuilder extends StandaloneBuilder {
 
 	def XtextResourceSet getResourceSet() {
 		return index.resourceSet as XtextResourceSet
+	}
+
+	override launch() {
+		val result = super.launch()
+		(issueHandler as ValidationMarkerUpdater).updateMarkerMap
+		return result
+	}
+
+	override protected validate(Resource resource) {
+		(issueHandler as ValidationMarkerUpdater).setContext(resource)
+		val result = super.validate(resource)
+		return result
 	}
 
 }

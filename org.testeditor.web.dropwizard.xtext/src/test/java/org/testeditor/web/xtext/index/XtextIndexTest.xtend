@@ -12,7 +12,6 @@ import org.eclipse.xtend.core.XtendStandaloneSetup
 import org.eclipse.xtext.ISetup
 import org.eclipse.xtext.XtextRuntimeModule
 import org.eclipse.xtext.builder.standalone.IIssueHandler
-import org.eclipse.xtext.builder.standalone.IIssueHandler.DefaultIssueHandler
 import org.eclipse.xtext.builder.standalone.ILanguageConfiguration
 import org.eclipse.xtext.builder.standalone.LanguageAccessFactory
 import org.eclipse.xtext.builder.standalone.compiler.EclipseJavaCompiler
@@ -23,6 +22,7 @@ import org.eclipse.xtext.xbase.testing.RegisteringFileSystemAccess
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
 import org.xtext.example.mydsl.MyDslStandaloneSetup
 
 import static org.assertj.core.api.Assertions.*
@@ -83,7 +83,7 @@ class XtextIndexTest extends AbstractTestWithExampleLanguage {
 		modules += [ binder |
 			binder.bind(AbstractFileSystemAccess).to(RegisteringFileSystemAccess).asEagerSingleton
 			binder.bind(IJavaCompiler).to(EclipseJavaCompiler)
-			binder.bind(IIssueHandler).to(DefaultIssueHandler)
+			binder.bind(IIssueHandler).to(ValidationMarkerUpdater)
 		]
 
 	}

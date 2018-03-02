@@ -11,24 +11,28 @@ import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.xtext.ISetup
 import org.eclipse.xtext.XtextRuntimeModule
 import org.eclipse.xtext.builder.standalone.IIssueHandler
-import org.eclipse.xtext.builder.standalone.IIssueHandler.DefaultIssueHandler
 import org.eclipse.xtext.builder.standalone.compiler.EclipseJavaCompiler
 import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
 import org.eclipse.xtext.common.TerminalsStandaloneSetup
 import org.eclipse.xtext.generator.AbstractFileSystemAccess
 import org.eclipse.xtext.generator.JavaIoFileSystemAccess
 import org.testeditor.web.dropwizard.DropwizardApplication
+import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerResource
+import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
 import org.testeditor.web.xtext.index.XtextIndexModule
 import org.testeditor.web.xtext.index.persistence.GitService
+import org.testeditor.web.xtext.index.persistence.GradleProjectIndexUpdater
 import org.testeditor.web.xtext.index.persistence.IndexUpdater
 import org.testeditor.web.xtext.index.persistence.webhook.BitbucketWebhookResource
-import org.testeditor.web.xtext.index.persistence.GradleProjectIndexUpdater
+import javax.ws.rs.core.Response.ResponseBuilder
+import javax.ws.rs.core.Response
 
 abstract class XtextApplication<T extends XtextConfiguration> extends DropwizardApplication<T> {
 
 	@Inject XtextIndexModule indexModule
 	@Inject GitService gitService
 	@Inject IndexUpdater indexUpdater
+	@Inject ValidationMarkerUpdater validationMarkerUpdater
 
 	override protected initializeInjection(Bootstrap<T> bootstrap) {
 		new TerminalsStandaloneSetup().createInjectorAndDoEMFRegistration
@@ -40,8 +44,9 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 		modules += [ binder |
 			binder.bind(AbstractFileSystemAccess).to(JavaIoFileSystemAccess).asEagerSingleton
 			binder.bind(IJavaCompiler).to(EclipseJavaCompiler)
-			binder.bind(IIssueHandler).to(DefaultIssueHandler)
+			binder.bind(IIssueHandler).to(ValidationMarkerUpdater)
 			binder.bind(IndexUpdater).to(GradleProjectIndexUpdater)
+			binder.bind(ResponseBuilder).toProvider[Response.ok]
 		]
 		modules += new XtextRuntimeModule
 	}
@@ -57,6 +62,7 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 		initializeXtextIndex(configuration, environment)
 		configureXtextServiceResource(configuration, environment)
 		configureWebhooks(configuration, environment)
+		configureValidationMarkerResource(configuration, environment)
 	}
 
 	protected def void prepareLanguageSetups(T configuration, Environment environment) {
@@ -64,7 +70,9 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 	}
 
 	protected def void initializeXtextIndex(T configuration, Environment environment) {
-		gitService.init(configuration.localRepoFileRoot, configuration.remoteRepoUrl, configuration.privateKeyLocation, configuration.knownHostsLocation)
+		gitService.init(configuration.localRepoFileRoot, configuration.remoteRepoUrl, configuration.privateKeyLocation,
+			configuration.knownHostsLocation)
+		validationMarkerUpdater.init(configuration.localRepoFileRoot)
 		indexUpdater.initIndex(new File(configuration.localRepoFileRoot))
 	}
 
@@ -75,6 +83,10 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 
 	protected def void configureWebhooks(T configuration, Environment environment) {
 		environment.jersey.register(BitbucketWebhookResource)
+	}
+
+	protected def void configureValidationMarkerResource(T configuration, Environment environment) {
+		environment.jersey.register(ValidationMarkerResource)
 	}
 
 	/**
