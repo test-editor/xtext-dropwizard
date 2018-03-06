@@ -5,6 +5,7 @@ import java.io.File
 import java.util.List
 import java.util.Map
 import javax.inject.Inject
+import javax.inject.Singleton
 import org.apache.commons.io.FilenameUtils
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.Resource
@@ -18,7 +19,6 @@ import org.eclipse.xtext.resource.FileExtensionProvider
 import org.eclipse.xtext.resource.IResourceServiceProvider
 import org.slf4j.LoggerFactory
 import org.testeditor.web.xtext.index.XtextIndex
-import javax.inject.Singleton
 
 /**
  * Default implementation of an index used for xtext web services in the context of dropwizard applications
@@ -28,14 +28,14 @@ class IndexUpdater {
 
 	static val logger = LoggerFactory.getLogger(IndexUpdater)
 
-	@Inject XtextIndex index
+	@Inject protected XtextIndex index
 	@Inject OutputConfigurationProvider configurationProvider
 
 	@Accessors(PUBLIC_GETTER)
 	var List<ISetup> languageSetups
 	@Accessors(PUBLIC_GETTER)
 	var Map<String, LanguageAccess> languageAccessors
-	
+
 	def void initLanguages(List<ISetup> newLanguageSetups) {
 		languageSetups = newLanguageSetups
 		languageAccessors = createLanguageAccess(languageSetups)
@@ -47,7 +47,7 @@ class IndexUpdater {
 	def void initIndex(File file) {
 		addToIndex(file)
 	}
-	
+
 	/**
 	 * Recursively traverses the file tree and adds all files to the
 	 * index that are relevant (with registered language extensions).
@@ -134,7 +134,7 @@ class IndexUpdater {
 		val file = new File(parent, child)
 		return getAbsoluteFileURI(file)
 	}
-	
+
 	/** partial copy of LanguageAccessFactory */
 	private def Map<String, LanguageAccess> createLanguageAccess(List<? extends ISetup> languageSetups) {
 		val result = newHashMap

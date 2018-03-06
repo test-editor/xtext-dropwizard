@@ -11,6 +11,8 @@ import javax.inject.Inject
 import org.eclipse.xtend.core.XtendStandaloneSetup
 import org.eclipse.xtext.ISetup
 import org.eclipse.xtext.XtextRuntimeModule
+import org.eclipse.xtext.build.BuildRequest
+import org.eclipse.xtext.build.IncrementalBuilder
 import org.eclipse.xtext.builder.standalone.IIssueHandler
 import org.eclipse.xtext.builder.standalone.ILanguageConfiguration
 import org.eclipse.xtext.builder.standalone.LanguageAccessFactory
@@ -18,6 +20,7 @@ import org.eclipse.xtext.builder.standalone.compiler.EclipseJavaCompiler
 import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
 import org.eclipse.xtext.generator.AbstractFileSystemAccess
 import org.eclipse.xtext.generator.OutputConfigurationProvider
+import org.eclipse.xtext.resource.XtextResourceSet
 import org.eclipse.xtext.xbase.testing.RegisteringFileSystemAccess
 import org.junit.Rule
 import org.junit.Test
@@ -27,13 +30,17 @@ import org.xtext.example.mydsl.MyDslStandaloneSetup
 
 import static org.assertj.core.api.Assertions.*
 
+import static extension org.eclipse.emf.common.util.URI.createFileURI
+import static extension org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils.*
+
 class XtextIndexTest extends AbstractTestWithExampleLanguage {
 
 	@Rule public val tmpFolder = new TemporaryFolder
 
-	@Inject CustomStandaloneBuilder builder
+	@Inject IncrementalBuilder builder
 	@Inject LanguageAccessFactory languageAccessFactory
 	@Inject OutputConfigurationProvider configurationProvider
+	@Inject XtextResourceSet indexResourceSet
 
 	@Test
 	def void addingJarsToIndexAddsAllRelevantContents() {
@@ -48,25 +55,28 @@ class XtextIndexTest extends AbstractTestWithExampleLanguage {
 			close
 		]
 
-		builder => [
-			languages = languageAccessFactory.createLanguageAccess(#[
-				createLanguageConfiguration(MyDslStandaloneSetup),
-				createLanguageConfiguration(XtendStandaloneSetup)
-			], class.classLoader)
-			baseDir = tmpFolder.root.absolutePath
-			sourceDirs = #[]
-			classPathEntries = #[jarFilename]
+		val languages = languageAccessFactory.createLanguageAccess(#[
+			createLanguageConfiguration(MyDslStandaloneSetup),
+			createLanguageConfiguration(XtendStandaloneSetup)
+		], class.classLoader)
+
+		indexResourceSet.installTypeProvider(#[jarFilename])
+
+		val initRequest = new BuildRequest => [
+			baseDir = tmpFolder.root.absolutePath.createFileURI
+			resourceSet = indexResourceSet
+			dirtyFiles = collectResources(#[jarFilename], indexResourceSet, languages.keySet)
 		]
 
 		// when
-		builder.launch
+		val result = builder.build(initRequest, [languages.get(fileExtension).resourceServiceProvider])
 
 		// then
-		builder.index.exportedObjects.map[qualifiedName.toString].toSet => [
+		result.indexState.resourceDescriptions.exportedObjects.map[qualifiedName.toString].toSet => [
 			assertThat(it).containsOnly('Peter', 'Test') // java artifact (jxtest) is NOT indexed
 		]
 		// classloader of this resource set resolve classes from jar (hopefully this will mean, that java references will be resolved for dsl resources)
-		val clazz = (builder.resourceSet.classpathURIContext as ClassLoader).loadClass('jtest')
+		val clazz = (indexResourceSet.classpathURIContext as ClassLoader).loadClass('jtest')
 		assertThat(clazz.name).isEqualTo('jtest')
 	}
 
