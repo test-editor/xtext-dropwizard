@@ -2,8 +2,6 @@ package org.testeditor.web.dropwizard.xtext.validation
 
 import java.util.concurrent.TimeoutException
 import javax.inject.Provider
-import javax.servlet.http.HttpServletRequest
-import javax.servlet.http.HttpSession
 import javax.ws.rs.container.AsyncResponse
 import javax.ws.rs.core.Response
 import javax.ws.rs.core.Response.ResponseBuilder

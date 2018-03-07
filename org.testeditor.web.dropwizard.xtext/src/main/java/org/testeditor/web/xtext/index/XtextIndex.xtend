@@ -22,19 +22,20 @@ class XtextIndex extends ResourceSetBasedResourceDescriptions {
 	static val logger = LoggerFactory.getLogger(XtextIndex)
 
 	@Inject IResourceDescription.Manager resourceDescriptionManager
-	ResourceDescriptionsData data
 
 	@Inject
 	new(XtextResourceSet resourceSet) {
-		data = new ResourceDescriptionsData(emptyList)
-		installResourceDescriptionsData(resourceSet, data)
+		super.context = resourceSet
+	}
+
+	/** used by the custom standalone builder to write the collected information into this index */
+	def void init(ResourceDescriptionsData newData, XtextResourceSet resourceSet) {
+		installResourceDescriptionsData(resourceSet, newData)
 		super.context = resourceSet
 	}
 	
-	/** used by the custom standalone builder to write the collected information into this index */
-	def void init(ResourceDescriptionsData newData, XtextResourceSet resourceSet) {
-		data = new ResourceDescriptionsData(emptyList)
-		super.context = resourceSet
+	override XtextResourceSet getResourceSet() {
+		return super.resourceSet as XtextResourceSet
 	}
 
 	/** 

@@ -19,8 +19,6 @@ import org.mockito.MockitoAnnotations
 import static java.util.Collections.nCopies
 import static org.assertj.core.api.Assertions.assertThat
 import static org.eclipse.xtext.diagnostics.Severity.*
-import static org.mockito.ArgumentMatchers.*
-import static org.mockito.Mockito.never
 import static org.mockito.Mockito.verify
 
 @RunWith(Parameterized)

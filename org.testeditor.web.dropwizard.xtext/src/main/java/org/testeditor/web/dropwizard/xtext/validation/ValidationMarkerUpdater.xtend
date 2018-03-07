@@ -1,5 +1,6 @@
 package org.testeditor.web.dropwizard.xtext.validation
 
+import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.ArrayList
@@ -8,20 +9,21 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.Resource
+import org.eclipse.xtext.build.BuildRequest.IPostValidationCallback
 import org.eclipse.xtext.builder.standalone.IIssueHandler
+import org.eclipse.xtext.builder.standalone.StandaloneBuilder
 import org.eclipse.xtext.validation.Issue
 import org.slf4j.LoggerFactory
-import java.io.File
 
 /**
  * Collects and summarizes validation issues on a per-resource-basis.
  * 
- * This class is an {@link org.eclipse.xtext.builder.standalone.IIssueHandler},
- * so when bound via Guice, it will be used by the {@link org.eclipse.xtext.builder.standalone.StandaloneBuilder}
+ * This class is an {@link IIssueHandler},
+ * so when bound via Guice, it will be used by the {@link StandaloneBuilder}
  * as a callback invoked after validating each resource.
  * 
  * This updater in turn sends the summarized validation results to a
- * {@link org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerMap},
+ * {@link ValidationMarkerMap},
  * but only after the builder has finished validating all resources. Since the
  * latter does not offer appropriate callback hooks, 
  * {@link org.testeditor.web.xtext.index.CustomStandaloneBuilder} extends that
@@ -38,7 +40,7 @@ import java.io.File
  * itself. 
  */
 @Singleton
-class ValidationMarkerUpdater implements IIssueHandler {
+class ValidationMarkerUpdater implements IIssueHandler, IPostValidationCallback {
 
 	@Inject DefaultIssueHandler delegateForDefaultBehavior
 	@Inject extension ValidationMarkerMap validationMarkerMap
@@ -57,9 +59,14 @@ class ValidationMarkerUpdater implements IIssueHandler {
 		currentResource = resource
 	}
 
+	override afterValidate(URI resourceURI, Iterable<Issue> issues) {
+		issues.forEach[previouslyCollectedSummary(resourceURI.toResourcePath).incrementFor(it)]
+		return true
+	}
+
 	override boolean handleIssue(Iterable<Issue> issues) {
 		issues?.forEach [
-			val path = uriToProblem.resourcePath
+			val path = uriToProblem.toResourcePath
 			if (path !== null) {
 				previouslyCollectedSummary(path).incrementFor(it)
 			} else {
@@ -93,7 +100,7 @@ class ValidationMarkerUpdater implements IIssueHandler {
 		]
 	}
 
-	private def getResourcePath(URI uri) {
+	private def toResourcePath(URI uri) {
 		if (uri !== null) {
 			return rootDirectory.relativize(Paths.get(uri.path)).toString
 		} else if (currentResource !== null) {

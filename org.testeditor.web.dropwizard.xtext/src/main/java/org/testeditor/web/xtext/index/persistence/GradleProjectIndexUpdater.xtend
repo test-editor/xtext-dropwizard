@@ -9,32 +9,48 @@ import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import org.testeditor.web.xtext.index.CustomStandaloneBuilder
 import javax.inject.Singleton
+import org.eclipse.xtext.build.BuildRequest
+import org.eclipse.xtext.build.IncrementalBuilder
+import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
 import org.slf4j.LoggerFactory
+import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
+
+import static extension org.eclipse.emf.common.util.URI.createFileURI
+import static extension org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils.*
 
 @Singleton
 class GradleProjectIndexUpdater extends IndexUpdater {
-	
+
 	static val GRADLE_PROCESS_TIMEOUT_MINUTES = 10
 
 	static val logger = LoggerFactory.getLogger(GradleProjectIndexUpdater)
 
-	@Inject CustomStandaloneBuilder builder	
+	@Inject IncrementalBuilder builder
+	@Inject ValidationMarkerUpdater validationMarkerUpdater
 
 	override def void initIndex(File projectRoot) {
-		builder.languages = languageAccessors
-		if (new File(projectRoot.absolutePath, 'build.gradle').exists) {
+		val basePath = projectRoot.absolutePath
+
+		if (new File(basePath, 'build.gradle').exists) {
 			runGradleAssemble(projectRoot)
 			prepareGradleTask(projectRoot)
 			val jars = collectClasspathJarsViaGradle(projectRoot)
-			builder => [
-				baseDir = projectRoot.absolutePath
-				sourceDirs = #[baseDir + "/src/main/java", baseDir + '/src/test/java']
-				classPathEntries = jars + #[baseDir + '/build/classes/java/main']
+			val initRequest = new BuildRequest => [
+				baseDir = basePath.createFileURI
+				resourceSet = index.resourceSet
+				dirtyFiles = collectResources(
+					#[basePath + "/src/main/java", basePath + '/src/test/java', basePath + '/build/classes/java/main'] + jars, resourceSet,
+					languageAccessors.keySet)
+				afterValidate = validationMarkerUpdater
 			]
-			builder.launch // does all the indexing ...
+
+			initRequest.resourceSet.installTypeProvider(jars)
+			val result = builder.build(initRequest, [languageAccessors.get(fileExtension).resourceServiceProvider])
+			index.init(result.indexState.resourceDescriptions, initRequest.resourceSet)
+			validationMarkerUpdater.updateMarkerMap
 		} else {
+			index.init(new ResourceDescriptionsData(emptyList), index.resourceSet)
 			super.initIndex(projectRoot)
 		}
 	}
@@ -47,7 +63,7 @@ class GradleProjectIndexUpdater extends IndexUpdater {
 		val completeOutput = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8))
 		logger.info(completeOutput.join('\n'))
 		val hasPrintTestClasspathTask = completeOutput.exists['printTestClasspath'.equals(it)]
-		if (!hasPrintTestClasspathTask) {	
+		if (!hasPrintTestClasspathTask) {
 			logger.info('Adding standard gradle job to print test classpath.')
 			Files.write(Paths.get(repoRoot.absolutePath).resolve('build.gradle'), '''
 				task printTestClasspath {
@@ -70,7 +86,9 @@ class GradleProjectIndexUpdater extends IndexUpdater {
 		val process = new ProcessBuilder('./gradlew', 'printTestClasspath').directory(repoRoot).start
 		logger.info('running gradle printTestClasspath.')
 		process.waitFor(GRADLE_PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES) // allow for downloads and the like
-		val jars = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8)).filter[startsWith('/')].filter[endsWith('.jar')]
+		val jars = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8)).filter[startsWith('/')].filter [
+			endsWith('.jar')
+		]
 		logger.info('found the following classpath entries:\n' + jars.join('\n'))
 		return jars
 	}
