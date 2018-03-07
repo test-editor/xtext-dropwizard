@@ -33,6 +33,10 @@ class XtextIndex extends ResourceSetBasedResourceDescriptions {
 		installResourceDescriptionsData(resourceSet, newData)
 		super.context = resourceSet
 	}
+	
+	override XtextResourceSet getResourceSet() {
+		return super.resourceSet as XtextResourceSet
+	}
 
 	/** 
 	 * add resource to index

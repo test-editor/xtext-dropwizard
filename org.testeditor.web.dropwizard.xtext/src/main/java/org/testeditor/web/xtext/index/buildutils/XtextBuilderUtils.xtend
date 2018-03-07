@@ -27,8 +27,8 @@ class XtextBuilderUtils {
 		val nameBasedFilter = new NameBasedFilter
 
 		// TODO test with whitespaced file extensions
-		nameBasedFilter.setRegularExpression(".*\\.(?:(" + extensions.join("|") + "))$");
-		val List<URI> resources = newArrayList();
+		nameBasedFilter.setRegularExpression(".*\\.(?:(" + extensions.join("|") + "))$")
+		val resources = <URI>newArrayList
 
 		val modelsFound = new PathTraverser().resolvePathes(
 			roots.toList,
@@ -36,7 +36,7 @@ class XtextBuilderUtils {
 				println('''URI: «input.toString»''')
 				val matches = nameBasedFilter.matches(input)
 				if (matches) {
-					resources.add(input);
+					resources.add(input)
 				}
 				return matches
 			]
@@ -47,7 +47,7 @@ class XtextBuilderUtils {
 				registerBundle(file)
 			}
 		]
-		return resources;
+		return resources
 	}
 
 	/**
@@ -56,33 +56,33 @@ class XtextBuilderUtils {
 	static def registerBundle(File file) {
 
 		// copied from org.eclipse.emf.mwe.utils.StandaloneSetup.registerBundle(File)
-		var JarFile jarFile = null;
+		var JarFile jarFile = null
 		try {
-			jarFile = new JarFile(file);
-			val Manifest manifest = jarFile.getManifest();
+			jarFile = new JarFile(file)
+			val Manifest manifest = jarFile.getManifest
 			if (manifest === null)
-				return;
-			var String name = manifest.getMainAttributes().getValue("Bundle-SymbolicName");
+				return
+			var String name = manifest.mainAttributes.getValue("Bundle-SymbolicName")
 			if (name !== null) {
-				val int indexOf = name.indexOf(';');
+				val int indexOf = name.indexOf(';')
 				if (indexOf > 0)
-					name = name.substring(0, indexOf);
-				if (EcorePlugin.getPlatformResourceMap().containsKey(name))
-					return;
-				val String path = "archive:" + file.toURI() + "!/";
-				val URI uri = URI.createURI(path);
-				EcorePlugin.getPlatformResourceMap().put(name, uri);
+					name = name.substring(0, indexOf)
+				if (EcorePlugin.platformResourceMap.containsKey(name))
+					return
+				val String path = "archive:" + file.toURI + "!/"
+				val URI uri = URI.createURI(path)
+				EcorePlugin.platformResourceMap.put(name, uri)
 			}
 		} catch (ZipException e) {
-			logger.info("Could not open Jar file " + file.getAbsolutePath() + ".");
+			logger.info("Could not open Jar file " + file.getAbsolutePath + ".")
 		} catch (Exception e) {
-			logger.error(file.absolutePath, e);
+			logger.error(file.absolutePath, e)
 		} finally {
 			try {
 				if (jarFile !== null)
-					jarFile.close();
+					jarFile.close
 			} catch (IOException e) {
-				logger.error(jarFile.toString, e);
+				logger.error(jarFile.toString, e)
 			}
 		}
 	}
@@ -90,17 +90,17 @@ class XtextBuilderUtils {
 	/**
 	 * copied and adapted from org.eclipse.xtext.builder.standalone.StandaloneBuilder
 	 */
-	static def void installTypeProvider(XtextResourceSet resSet, Iterable<String> classPathRoots) {
+	static def void installTypeProvider(XtextResourceSet resourceSet, Iterable<String> classPathRoots) {
 		val classLoader = createURLClassLoader(classPathRoots)
-		new ClasspathTypeProvider(classLoader, resSet, null, null)
-		resSet.setClasspathURIContext(classLoader);
+		new ClasspathTypeProvider(classLoader, resourceSet, null, null)
+		resourceSet.setClasspathURIContext(classLoader)
 	}
 
 	/**
 	 * copied and adapted from org.eclipse.xtext.builder.standalone.StandaloneBuilder
 	 */
 	static def private URLClassLoader createURLClassLoader(Iterable<String> classPathEntries) {
-		val classPathUrls = classPathEntries.map[str|new File(str).toURI().toURL()]
+		val classPathUrls = classPathEntries.map[str|new File(str).toURI.toURL]
 		return new URLClassLoader(classPathUrls)
 	}
 

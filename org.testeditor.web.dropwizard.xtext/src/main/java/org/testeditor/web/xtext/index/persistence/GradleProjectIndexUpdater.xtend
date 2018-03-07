@@ -12,7 +12,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import org.eclipse.xtext.build.BuildRequest
 import org.eclipse.xtext.build.IncrementalBuilder
-import org.eclipse.xtext.resource.XtextResourceSet
 import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
 import org.slf4j.LoggerFactory
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
@@ -39,7 +38,7 @@ class GradleProjectIndexUpdater extends IndexUpdater {
 			val jars = collectClasspathJarsViaGradle(projectRoot)
 			val initRequest = new BuildRequest => [
 				baseDir = basePath.createFileURI
-				resourceSet = index.resourceSet as XtextResourceSet
+				resourceSet = index.resourceSet
 				dirtyFiles = collectResources(
 					#[basePath + "/src/main/java", basePath + '/src/test/java', basePath + '/build/classes/java/main'] + jars, resourceSet,
 					languageAccessors.keySet)
@@ -51,7 +50,7 @@ class GradleProjectIndexUpdater extends IndexUpdater {
 			index.init(result.indexState.resourceDescriptions, initRequest.resourceSet)
 			validationMarkerUpdater.updateMarkerMap
 		} else {
-			index.init(new ResourceDescriptionsData(emptyList), index.resourceSet as XtextResourceSet)
+			index.init(new ResourceDescriptionsData(emptyList), index.resourceSet)
 			super.initIndex(projectRoot)
 		}
 	}
