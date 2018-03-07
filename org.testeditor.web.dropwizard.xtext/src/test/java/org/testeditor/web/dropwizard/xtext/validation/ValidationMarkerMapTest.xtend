@@ -38,7 +38,7 @@ class ValidationMarkerMapTest {
 		// then
 		assertThat(actual).containsExactlyInAnyOrder(expected)
 	}
-	
+
 	@Test
 	def void returnsNoMarkersDefaultWhenPathIsNotFound() {
 		// given
@@ -50,7 +50,7 @@ class ValidationMarkerMapTest {
 		// then
 		assertThat(actual).isEqualTo(ValidationSummary.noMarkers('unknown/path'))
 	}
-	
+
 	@Test
 	def void retrievesValidationSummaryForPath() {
 		// given
@@ -92,7 +92,6 @@ class ValidationMarkerMapTest {
 	def void waitsForFutureCompletionIfUpToDate() {
 		// given
 		val scheduler = Executors.newScheduledThreadPool(2)
-		val session = 'session'
 		val unitUnderTest = new ValidationMarkerMap
 		unitUnderTest.updateMarkers(#[])
 		unitUnderTest.waitForAnyNewMarkersSince(-1, 100)
