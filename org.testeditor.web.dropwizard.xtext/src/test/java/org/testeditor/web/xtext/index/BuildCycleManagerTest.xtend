@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when
 class BuildCycleManagerTest {
 
 	@Mock ChangeDetector mockChangeDetector
+	@Mock ChangedResources mockChangedResources
 	@Mock XtextResourceSet mockResourceSet
 	@Mock ValidationMarkerUpdater mockValidationMarkerUpdater
 	@Mock IncrementalBuilder mockIncrementalBuilder
@@ -55,8 +56,9 @@ class BuildCycleManagerTest {
 			state = initialIndexState
 		]
 
-		when(mockChangeDetector.modifiedResources).thenReturn(expectedModifiedResources)
-		when(mockChangeDetector.deletedResources).thenReturn(expectedDeletedResource)
+		when(mockChangeDetector.detectChanges(mockResourceSet)).thenReturn(mockChangedResources)
+		when(mockChangedResources.modifiedResources).thenReturn(expectedModifiedResources)
+		when(mockChangedResources.deletedResources).thenReturn(expectedDeletedResource)
 
 		val builderResult = mock(IncrementalBuilder.Result)
 		val indexState = getMockedIndexState(#['Test'])

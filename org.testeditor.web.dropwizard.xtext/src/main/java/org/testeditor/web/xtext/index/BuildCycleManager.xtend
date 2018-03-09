@@ -36,9 +36,10 @@ class BuildCycleManager {
 
 	def BuildRequest addChanges(BuildRequest request) {
 		return request => [
-			dirtyFiles += changeDetector.modifiedResources
-			deletedFiles += changeDetector.deletedResources
-		]
+			val changes = changeDetector.detectChanges(indexResourceSet)
+			dirtyFiles += changes.modifiedResources
+			deletedFiles += changes.deletedResources				
+			]
 	}
 
 	def BuildRequest createBuildRequest() {
@@ -81,6 +82,10 @@ class ChunkedResourceDescriptionsProvider {
 }
 
 interface ChangeDetector {
+	def ChangedResources detectChanges(ResourceSet resourceSet)
+}
+
+interface ChangedResources {
 
 	def Iterable<URI> getModifiedResources()
 
