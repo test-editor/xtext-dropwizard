@@ -41,7 +41,7 @@ class GradleProjectIndexUpdater extends IndexUpdater {
 				resourceSet = index.resourceSet
 				dirtyFiles = collectResources(
 					#[basePath + "/src/main/java", basePath + '/src/test/java', basePath + '/build/classes/java/main'] + jars, resourceSet,
-					languageAccessors.keySet)
+					languageAccessors.keySet).toList
 				afterValidate = validationMarkerUpdater
 			]
 

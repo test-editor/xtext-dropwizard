@@ -29,7 +29,6 @@ class BuildCycleManager {
 
 	var URI baseURI
 	var IndexState lastIndexState = new IndexState
-	var firstBuild = true
 	var String[] staticSearchPaths = null
 
 	def init(URI baseURI) {
@@ -37,29 +36,20 @@ class BuildCycleManager {
 	}
 
 	def startBuild() {
-		startBuild(firstBuild)
-		firstBuild = false
-	}
-
-	private def startBuild(boolean firstBuild) {
-		createBuildRequest.addChanges(firstBuild).build.updateIndex
+		createBuildRequest.addChanges.build.updateIndex
 		updateValidationMarkers
 	}
 
-	def BuildRequest addChanges(BuildRequest request, boolean firstBuild) {
+	def BuildRequest addChanges(BuildRequest request) {
 		return request => [
-			if (firstBuild) {
-//				dirtyFiles += changeDetector.allResources(indexResourceSet)
-			} else {
-				val changes = changeDetector.detectChanges(indexResourceSet, searchPaths)
-				dirtyFiles += changes.modifiedResources
-				deletedFiles += changes.deletedResources
-			}
+			val changes = changeDetector.detectChanges(indexResourceSet, searchPaths)
+			dirtyFiles += changes.modifiedResources
+			deletedFiles += changes.deletedResources
 		]
 	}
 
-	def String[] getSearchPaths() {
-		getStaticSearchPaths + config.localRepoFileRoot.additionalSearchPaths
+	def String[] getSearchPaths(BuildRequest request) {
+		getStaticSearchPaths + config.localRepoFileRoot.additionalSearchPaths()
 	}
 
 	def BuildRequest createBuildRequest() {

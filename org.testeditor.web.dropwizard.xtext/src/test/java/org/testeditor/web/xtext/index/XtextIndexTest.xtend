@@ -65,7 +65,7 @@ class XtextIndexTest extends AbstractTestWithExampleLanguage {
 		val initRequest = new BuildRequest => [
 			baseDir = tmpFolder.root.absolutePath.createFileURI
 			resourceSet = indexResourceSet
-			dirtyFiles = collectResources(#[jarFilename], indexResourceSet, languages.keySet)
+			dirtyFiles = collectResources(#[jarFilename], indexResourceSet, languages.keySet).toList
 		]
 
 		// when

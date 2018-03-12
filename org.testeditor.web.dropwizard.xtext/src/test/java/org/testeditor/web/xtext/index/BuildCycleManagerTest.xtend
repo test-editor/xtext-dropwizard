@@ -98,7 +98,7 @@ class BuildCycleManagerTest {
 		val initialBuildRequest = new BuildRequest
 
 		// when
-		val actualBuildRequest = initialBuildRequest.addChanges(false)
+		val actualBuildRequest = initialBuildRequest.addChanges
 
 		// then
 		assertThat(actualBuildRequest.deletedFiles).containsOnly(expectedDeletedResource)
