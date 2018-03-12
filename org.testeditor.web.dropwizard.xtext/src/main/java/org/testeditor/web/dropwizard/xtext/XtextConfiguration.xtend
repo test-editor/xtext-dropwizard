@@ -10,6 +10,9 @@ public class XtextConfiguration extends DropwizardApplicationConfiguration {
 
 	@NotEmpty @JsonProperty
 	String localRepoFileRoot = 'repo'
+	
+	@JsonProperty
+	String[] indexSearchPaths = #['/src/main/java', '/src/test/java', '/build/classes/java/main']
 
 	@NotEmpty @JsonProperty
 	String remoteRepoUrl

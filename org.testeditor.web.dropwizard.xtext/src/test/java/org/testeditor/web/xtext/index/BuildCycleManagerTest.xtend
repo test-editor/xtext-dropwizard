@@ -17,6 +17,8 @@ import org.mockito.ArgumentCaptor
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import org.mockito.Spy
+import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
 
 import static org.assertj.core.api.Assertions.assertThat
@@ -27,6 +29,11 @@ import static org.mockito.Mockito.when
 
 class BuildCycleManagerTest {
 
+	@Spy var config = new XtextConfiguration => [
+		localRepoFileRoot = '/base/dir'
+		indexSearchPaths = #['/search/path']
+	]
+	@Mock IndexSearchPathProvider mockSearchPathProvider
 	@Mock ChangeDetector mockChangeDetector
 	@Mock ChangedResources mockChangedResources
 	@Mock XtextResourceSet mockResourceSet
@@ -48,7 +55,7 @@ class BuildCycleManagerTest {
 		MockitoAnnotations.initMocks(this)
 
 		sampleBuildRequest = new BuildRequest => [
-			baseDir = URI.createFileURI('/base/dir')
+			baseDir = URI.createFileURI(config.localRepoFileRoot)
 			resourceSet = mockResourceSet
 			afterValidate = mockValidationMarkerUpdater
 			deletedFiles = expectedDeletedResource
@@ -56,7 +63,8 @@ class BuildCycleManagerTest {
 			state = initialIndexState
 		]
 
-		when(mockChangeDetector.detectChanges(mockResourceSet)).thenReturn(mockChangedResources)
+		when(mockSearchPathProvider.additionalSearchPaths(config.localRepoFileRoot)).thenReturn(#['/base/dir/some.jar'])
+		when(mockChangeDetector.detectChanges(eq(mockResourceSet), any)).thenReturn(mockChangedResources)
 		when(mockChangedResources.modifiedResources).thenReturn(expectedModifiedResources)
 		when(mockChangedResources.deletedResources).thenReturn(expectedDeletedResource)
 
@@ -90,23 +98,24 @@ class BuildCycleManagerTest {
 		val initialBuildRequest = new BuildRequest
 
 		// when
-		val actualBuildRequest = initialBuildRequest.addChanges
+		val actualBuildRequest = initialBuildRequest.addChanges(false)
 
 		// then
 		assertThat(actualBuildRequest.deletedFiles).containsOnly(expectedDeletedResource)
 		assertThat(actualBuildRequest.dirtyFiles).containsOnly(expectedModifiedResources)
+		verify(mockSearchPathProvider).additionalSearchPaths(config.localRepoFileRoot)
 	}
 
 	@Test
 	def void createBuildRequestSetsRequiredFields() {
 		// given
-		unitUnderTest.init(URI.createFileURI('/base/dir'))
+		unitUnderTest.init(URI.createFileURI(config.localRepoFileRoot))
 
 		// when
 		val actualBuildRequest = unitUnderTest.createBuildRequest
 
 		// then
-		assertThat(actualBuildRequest.baseDir).isEqualTo(URI.createFileURI('/base/dir'))
+		assertThat(actualBuildRequest.baseDir).isEqualTo(URI.createFileURI(config.localRepoFileRoot))
 		assertThat(actualBuildRequest.resourceSet).isEqualTo(mockResourceSet)
 		assertThat(actualBuildRequest.afterValidate).isEqualTo(mockValidationMarkerUpdater)
 		assertThat(actualBuildRequest.state.getResourceDescriptions.exportedObjects).isEmpty
@@ -175,7 +184,7 @@ class BuildCycleManagerTest {
 		// given
 		val exportedObjectNames = #['modelElement', 'anotherElement']
 		val newIndexState = getMockedIndexState(exportedObjectNames)
-		val baseURI = URI.createFileURI('/base/dir')
+		val baseURI = URI.createFileURI(config.localRepoFileRoot)
 		unitUnderTest.init(baseURI)
 
 		// when
