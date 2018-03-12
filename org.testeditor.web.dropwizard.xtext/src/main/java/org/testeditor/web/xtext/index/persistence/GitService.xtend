@@ -23,6 +23,8 @@ import org.slf4j.LoggerFactory
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_URL
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_REMOTE_SECTION
 import static org.eclipse.jgit.lib.Constants.*
+import org.eclipse.jgit.treewalk.AbstractTreeIterator
+import org.eclipse.jgit.treewalk.EmptyTreeIterator
 
 /**
  * provide some service around a git repo (read only)
@@ -99,6 +101,20 @@ class GitService {
 	def List<DiffEntry> calculateDiff(String oldHeadCommit, String newHeadCommit) {
 		return calculateDiff(ObjectId.fromString(oldHeadCommit), ObjectId.fromString(newHeadCommit))
 	}
+	
+	/**
+	 * Calculates diff of the provided commit against the empty tree.
+	 * 
+	 * This basically lists all files under version control up to the specified
+	 * commit, i.e. all diff entries being returned are going to be of change
+	 * type 'ADD'. This is handy for change detection, to handle a situation
+	 * in which all files need to be treated as new (e.g. after the working copy
+	 * has just been cloned from a remote) in the same manner as any other diff
+	 * against a specific revision. 
+	 */
+	def List<DiffEntry> allFilesAsDiff(String newHeadCommit) {
+		return calculateDiffAgainstEmptyTree(ObjectId.fromString(newHeadCommit))
+	}
 
 	private def List<DiffEntry> calculateDiff(ObjectId oldHead, ObjectId newHead) {
 		logger.info("Calculating diff between old='{}' and new='{}'.", oldHead.getName, newHead.getName)
@@ -106,13 +122,30 @@ class GitService {
 		try {
 			val oldTree = new CanonicalTreeParser => [reset(reader, oldHead)]
 			val newTree = new CanonicalTreeParser => [reset(reader, newHead)]
-			val diff = git.diff.setOldTree(oldTree).setNewTree(newTree).call
-			logger.info("Calculated diff='{}'.", diff)
-			return diff
+			return calculateDiff(oldTree, newTree)
 		} finally {
 			reader.close
 		}
 	}
+	
+	private def List<DiffEntry> calculateDiffAgainstEmptyTree(ObjectId newHead) {
+		logger.info("Calculating diff of '{}' against empty tree.", newHead.getName)
+		val reader = git.repository.newObjectReader
+		try {
+			val oldTree = new EmptyTreeIterator
+			val newTree = new CanonicalTreeParser => [reset(reader, newHead)]
+			return calculateDiff(oldTree, newTree)
+		} finally {
+			reader.close
+		}
+	}
+	
+	private def List<DiffEntry> calculateDiff(AbstractTreeIterator oldTree, AbstractTreeIterator newTree) {
+			val diff = git.diff.setOldTree(oldTree).setNewTree(newTree).call
+			logger.info("Calculated diff='{}'.", diff)
+			return diff
+	}
+	
 
 	private def void cloneRepository(File projectFolder, String remoteRepoUrl) {
 		val cloneCommand = Git.cloneRepository => [

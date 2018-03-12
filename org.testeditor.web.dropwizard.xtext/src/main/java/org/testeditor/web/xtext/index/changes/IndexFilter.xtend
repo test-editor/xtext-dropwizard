@@ -16,7 +16,7 @@ interface IndexFilter {
 
 class LanguageExtensionBasedIndexFilter implements IndexFilter {
 
-	override isRelevantForIndex(String filePath) {
+	override boolean isRelevantForIndex(String filePath) {
 		if (filePath === null) {
 			return false
 		}
@@ -32,8 +32,8 @@ class SearchPathBasedIndexFilter implements IndexFilter {
 	
 	var Iterable<Path> searchPaths = null
 
-	override isRelevantForIndex(String path) {
-		getSearchPaths.exists[new File(path).toPath.toAbsolutePath.startsWith(it)]
+	override boolean isRelevantForIndex(String path) {
+		return getSearchPaths.exists[new File(path).toPath.toAbsolutePath.startsWith(it)]
 	}
 	
 	private def Iterable<Path> getSearchPaths() {
@@ -50,8 +50,8 @@ class SearchPathBasedIndexFilter implements IndexFilter {
 class LogicalAndBasedIndexFilter implements IndexFilter {
 	val Iterable<IndexFilter> conditions
 	
-	override isRelevantForIndex(String path) {
-		conditions.forall[it.isRelevantForIndex(path)]
+	override boolean isRelevantForIndex(String path) {
+		return conditions.forall[it.isRelevantForIndex(path)]
 	}
 	
 }

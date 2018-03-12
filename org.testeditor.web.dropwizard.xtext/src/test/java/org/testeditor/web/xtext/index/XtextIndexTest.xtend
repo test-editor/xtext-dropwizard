@@ -26,12 +26,12 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
+import org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils
 import org.xtext.example.mydsl.MyDslStandaloneSetup
 
 import static org.assertj.core.api.Assertions.*
 
 import static extension org.eclipse.emf.common.util.URI.createFileURI
-import static extension org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils.*
 
 class XtextIndexTest extends AbstractTestWithExampleLanguage {
 
@@ -41,6 +41,7 @@ class XtextIndexTest extends AbstractTestWithExampleLanguage {
 	@Inject LanguageAccessFactory languageAccessFactory
 	@Inject OutputConfigurationProvider configurationProvider
 	@Inject XtextResourceSet indexResourceSet
+	@Inject extension XtextBuilderUtils builderUtils
 
 	@Test
 	def void addingJarsToIndexAddsAllRelevantContents() {
