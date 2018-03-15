@@ -20,10 +20,8 @@ import org.testeditor.web.xtext.index.persistence.GitService
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.eclipse.jgit.diff.DiffEntry.ChangeType.*
-import static org.mockito.ArgumentMatchers.*
 
 import static extension org.eclipse.emf.common.util.URI.createFileURI
-import static extension org.mockito.AdditionalMatchers.*
 import static extension org.mockito.Mockito.*
 
 class GitBasedChangeDetectorTest {
@@ -31,7 +29,6 @@ class GitBasedChangeDetectorTest {
 	@Rule public MockitoRule mockitoRule = MockitoJUnit.rule
 
 	@Mock(answer=Answers.RETURNS_SMART_NULLS) GitService mockGit
-	@Mock IndexFilter mockFilter
 	@Mock ResourceSet mockResourceSet
 	@InjectMocks GitBasedChangeDetector unitUnderTest
 
@@ -43,20 +40,17 @@ class GitBasedChangeDetectorTest {
 	def void setupMocks() {
 		when(mockGit.headTree).thenReturn(headOnInitialUpdate)
 		when(mockGit.projectFolder).thenReturn(root)
-		when(mockFilter.isRelevantForIndex(isNull.or(not(endsWith('.mydsl'))))).thenReturn(false)
-		when(mockFilter.isRelevantForIndex(isNotNull.and(endsWith('.mydsl')))).thenReturn(true)
 	}
 
 	@Test
 	def void handlesDiffCorrectlyOnFirstChangeDetection() {
 		// given
 		val diffs = #[
-			mockDiffEntry(ADD, 'added.mydsl', null),
-			mockDiffEntry(COPY, 'theNewCopy.mydsl', 'theOldCopy.mydsl'),
-			mockDiffEntry(DELETE, null, 'theDeleted.mydsl'),
-			mockDiffEntry(MODIFY, 'theModified.mydsl', 'theModified.mydsl'),
-			mockDiffEntry(RENAME, 'theRenamed.mydsl', 'theOldRenamed.mydsl'),
-			mockDiffEntry(ADD, 'theIrrelevant', null)
+			mockDiffEntry(ADD, 'added.txt', null),
+			mockDiffEntry(COPY, 'theNewCopy.txt', 'theOldCopy.txt'),
+			mockDiffEntry(DELETE, null, 'theDeleted.txt'),
+			mockDiffEntry(MODIFY, 'theModified.txt', 'theModified.txt'),
+			mockDiffEntry(RENAME, 'theRenamed.txt', 'theOldRenamed.txt')
 		]
 
 		when(mockGit.allFilesAsDiff(headOnInitialUpdate.name())).thenReturn(diffs)
@@ -66,14 +60,14 @@ class GitBasedChangeDetectorTest {
 
 		// then
 		assertThat(actualChanges.modifiedResources).containsOnly(
-			toAbsoluteFileUri(root, 'added.mydsl'),
-			toAbsoluteFileUri(root, 'theNewCopy.mydsl'),
-			toAbsoluteFileUri(root, 'theModified.mydsl'),
-			toAbsoluteFileUri(root, 'theRenamed.mydsl')
+			toAbsoluteFileUri(root, 'added.txt'),
+			toAbsoluteFileUri(root, 'theNewCopy.txt'),
+			toAbsoluteFileUri(root, 'theModified.txt'),
+			toAbsoluteFileUri(root, 'theRenamed.txt')
 		)
 		assertThat(actualChanges.deletedResources).containsOnly(
-			toAbsoluteFileUri(root, 'theOldRenamed.mydsl'),
-			toAbsoluteFileUri(root, 'theDeleted.mydsl')
+			toAbsoluteFileUri(root, 'theOldRenamed.txt'),
+			toAbsoluteFileUri(root, 'theDeleted.txt')
 		)
 	}
 
@@ -81,12 +75,11 @@ class GitBasedChangeDetectorTest {
 	def void handlesDiffCorrectlyAfterFirstChangeDetection() {
 		// given
 		val diffs = #[
-			mockDiffEntry(ADD, 'added.mydsl', null),
-			mockDiffEntry(COPY, 'theNewCopy.mydsl', 'theOldCopy.mydsl'),
-			mockDiffEntry(DELETE, null, 'theDeleted.mydsl'),
-			mockDiffEntry(MODIFY, 'theModified.mydsl', 'theModified.mydsl'),
-			mockDiffEntry(RENAME, 'theRenamed.mydsl', 'theOldRenamed.mydsl'),
-			mockDiffEntry(ADD, 'theIrrelevant', null)
+			mockDiffEntry(ADD, 'added.txt', null),
+			mockDiffEntry(COPY, 'theNewCopy.txt', 'theOldCopy.txt'),
+			mockDiffEntry(DELETE, null, 'theDeleted.txt'),
+			mockDiffEntry(MODIFY, 'theModified.txt', 'theModified.txt'),
+			mockDiffEntry(RENAME, 'theRenamed.txt', 'theOldRenamed.txt')
 		]
 
 		when(mockGit.allFilesAsDiff(headOnInitialUpdate.name())).thenReturn(diffs)
@@ -103,46 +96,15 @@ class GitBasedChangeDetectorTest {
 
 		// then
 		assertThat(actualChanges.modifiedResources).containsOnly(
-			toAbsoluteFileUri(root, 'added.mydsl'),
-			toAbsoluteFileUri(root, 'theNewCopy.mydsl'),
-			toAbsoluteFileUri(root, 'theModified.mydsl'),
-			toAbsoluteFileUri(root, 'theRenamed.mydsl')
+			toAbsoluteFileUri(root, 'added.txt'),
+			toAbsoluteFileUri(root, 'theNewCopy.txt'),
+			toAbsoluteFileUri(root, 'theModified.txt'),
+			toAbsoluteFileUri(root, 'theRenamed.txt')
 		)
 		assertThat(actualChanges.deletedResources).containsOnly(
-			toAbsoluteFileUri(root, 'theOldRenamed.mydsl'),
-			toAbsoluteFileUri(root, 'theDeleted.mydsl')
+			toAbsoluteFileUri(root, 'theOldRenamed.txt'),
+			toAbsoluteFileUri(root, 'theDeleted.txt')
 		)
-	}
-
-	@Test
-	def void ignoresCopyUpdateIfNewPathIsNotRelevant() {
-		// given
-		when(mockGit.allFilesAsDiff(headOnInitialUpdate.name())).thenReturn(#[
-			mockDiffEntry(COPY, 'irrelevant.txt', 'theNewCopy.mydsl')
-		])
-
-		// when
-		val actualChanges = unitUnderTest.detectChanges(mockResourceSet, #[root.absolutePath])
-
-		// then
-		assertThat(actualChanges.modifiedResources).isEmpty
-	}
-
-//
-	@Test
-	def void handlesRenamingCorrectlyIfOnlyOnePathIsRelevant() {
-		// given
-		when(mockGit.allFilesAsDiff(headOnInitialUpdate.name())).thenReturn(#[
-			mockDiffEntry(RENAME, 'nowRelevant.mydsl', 'example.txt'),
-			mockDiffEntry(RENAME, 'nowIrrelevant.txt', 'formerlyRelevant.mydsl')
-		])
-
-		// when
-		val actualChanges = unitUnderTest.detectChanges(mockResourceSet, #[root.absolutePath])
-
-		// then
-		assertThat(actualChanges.modifiedResources).containsOnly(toAbsoluteFileUri(root, 'nowRelevant.mydsl'))
-		assertThat(actualChanges.deletedResources).containsOnly(toAbsoluteFileUri(root, 'formerlyRelevant.mydsl'))
 	}
 
 	@Test

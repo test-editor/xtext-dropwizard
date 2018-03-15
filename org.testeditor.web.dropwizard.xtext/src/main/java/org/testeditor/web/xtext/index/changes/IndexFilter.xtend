@@ -5,7 +5,6 @@ import java.nio.file.Path
 import javax.inject.Inject
 import org.apache.commons.io.FilenameUtils
 import org.eclipse.emf.ecore.resource.Resource
-import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 
 interface IndexFilter {
@@ -28,14 +27,15 @@ class LanguageExtensionBasedIndexFilter implements IndexFilter {
 }
 
 class SearchPathBasedIndexFilter implements IndexFilter {
+
 	@Inject XtextConfiguration config
-	
+
 	var Iterable<Path> searchPaths = null
 
 	override boolean isRelevantForIndex(String path) {
 		return getSearchPaths.exists[new File(path).toPath.toAbsolutePath.startsWith(it)]
 	}
-	
+
 	private def Iterable<Path> getSearchPaths() {
 		if (searchPaths === null) {
 			val baseDir = new File(config.localRepoFileRoot)
@@ -46,12 +46,12 @@ class SearchPathBasedIndexFilter implements IndexFilter {
 
 }
 
-@FinalFieldsConstructor
 class LogicalAndBasedIndexFilter implements IndexFilter {
-	val Iterable<IndexFilter> conditions
-	
+
+	@Inject Iterable<IndexFilter> conditions
+
 	override boolean isRelevantForIndex(String path) {
 		return conditions.forall[it.isRelevantForIndex(path)]
 	}
-	
+
 }

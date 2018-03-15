@@ -2,7 +2,6 @@ package org.testeditor.web.xtext.index.changes
 
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.ResourceSet
-import org.eclipse.xtend.lib.annotations.FinalFieldsConstructor
 import org.junit.Test
 import org.mockito.ArgumentCaptor
 import org.testeditor.web.xtext.index.SetBasedChangedResources
@@ -15,98 +14,83 @@ import static org.mockito.Mockito.spy
 import static org.mockito.Mockito.verify
 
 class ChainableChangeDetectorTest {
-	@FinalFieldsConstructor
-	static class ChainableChangeDetectorForTesting extends ChainableChangeDetector {
-		val (SetBasedChangedResources)=>boolean handleResult
-		val ChainableChangeDetector successor
-		
-		override handleChangeDetectionRequest(ResourceSet resourceSet, String[] paths, SetBasedChangedResources detectedChanges) {
-			return this.handleResult.apply(detectedChanges)
-		}
-		
-		override protected getSuccessor() {
-			return this.successor
-		}
-		
+
+	@Test
+	def void proceedsWithNextDetectorInChain() {
+		// given
+		val mockResourceSet = mock(ResourceSet)
+		val String[] paths = #[]
+		val modifiedUriFromFirstDetector = URI.createFileURI('samplefile')
+		val secondDetector = spy(new ChainableChangeDetectorForTesting([false], null))
+		val firstDetector = new ChainableChangeDetectorForTesting([
+			modifiedResources += modifiedUriFromFirstDetector
+			return true
+		], secondDetector)
+
+		// when
+		firstDetector.detectChanges(mockResourceSet, paths)
+
+		// then
+		val changedResourcesCaptor = ArgumentCaptor.forClass(SetBasedChangedResources)
+		verify(secondDetector).handleChangeDetectionRequest(eq(mockResourceSet), eq(paths), changedResourcesCaptor.capture)
+		assertThat(changedResourcesCaptor.value.modifiedResources).containsOnly(modifiedUriFromFirstDetector)
 	}
-	
 
-@Test
-def void proceedsWithNextDetectorInChain() {
-	// given
-	val mockResourceSet = mock(ResourceSet)
-	val String[] paths = #[]
-	val modifiedUriFromFirstDetector = URI.createFileURI('samplefile')
-	val secondDetector = spy(new ChainableChangeDetectorForTesting([false], null))
-	val firstDetector = new ChainableChangeDetectorForTesting([
-		modifiedResources += modifiedUriFromFirstDetector
-		return true
-	], secondDetector)
-	
-	// when
-	firstDetector.detectChanges(mockResourceSet, paths)
-	
-	// then
-	val changedResourcesCaptor = ArgumentCaptor.forClass(SetBasedChangedResources)
-	verify(secondDetector).handleChangeDetectionRequest(eq(mockResourceSet), eq(paths), changedResourcesCaptor.capture)
-	assertThat(changedResourcesCaptor.value.modifiedResources).containsOnly(modifiedUriFromFirstDetector)
-}
+	@Test
+	def void returnsAccumulatedResult() {
+		// given
+		val mockResourceSet = mock(ResourceSet)
+		val String[] paths = #[]
+		val modifiedUriFromFirstDetector = URI.createFileURI('detected.first')
+		val modifiedUriFromSecondDetector = URI.createFileURI('detected.later')
 
-@Test
-def void returnsAccumulatedResult() {
-	// given
-	val mockResourceSet = mock(ResourceSet)
-	val String[] paths = #[]
-	val modifiedUriFromFirstDetector = URI.createFileURI('detected.first')
-	val modifiedUriFromSecondDetector = URI.createFileURI('detected.later')
-	
-	val secondDetector = new ChainableChangeDetectorForTesting([
-		modifiedResources += modifiedUriFromSecondDetector
-		return false
-	], null)
-	val firstDetector = new ChainableChangeDetectorForTesting([
-		modifiedResources += modifiedUriFromFirstDetector
-		return true
-	], secondDetector)
-	
-	// when
-	val actual = firstDetector.detectChanges(mockResourceSet, paths)
-	
-	// then
-	assertThat(actual.modifiedResources).containsOnly(#[modifiedUriFromFirstDetector, modifiedUriFromSecondDetector])
-}
+		val secondDetector = new ChainableChangeDetectorForTesting([
+			modifiedResources += modifiedUriFromSecondDetector
+			return false
+		], null)
+		val firstDetector = new ChainableChangeDetectorForTesting([
+			modifiedResources += modifiedUriFromFirstDetector
+			return true
+		], secondDetector)
 
-@Test
-def void stopsChainWhenFalseIsReturned() {
-	// given
-	val mockResourceSet = mock(ResourceSet)
-	val String[] paths = #[]
-	val secondDetector = spy(new ChainableChangeDetectorForTesting([false], null))
-	val firstDetector = new ChainableChangeDetectorForTesting([false], secondDetector)
-	
-	// when
-	firstDetector.detectChanges(mockResourceSet, paths)
-	
-	// then
-	verify(secondDetector, never).handleChangeDetectionRequest(any, any, any)
-}
+		// when
+		val actual = firstDetector.detectChanges(mockResourceSet, paths)
 
-@Test
-def void stopsChainWhenSuccessorIsNull() {
-	// given
-	val mockResourceSet = mock(ResourceSet)
-	val String[] paths = #[]
-	val modifiedUriFromFirstDetector = URI.createFileURI('samplefile')
-	val firstDetector = new ChainableChangeDetectorForTesting([
-		modifiedResources += modifiedUriFromFirstDetector
-		return true
-	], null)
-	
-	// when
-	val actual = firstDetector.detectChanges(mockResourceSet, paths)
-	
-	// then
-	assertThat(actual.modifiedResources).containsOnly(modifiedUriFromFirstDetector)
-}
+		// then
+		assertThat(actual.modifiedResources).containsOnly(#[modifiedUriFromFirstDetector, modifiedUriFromSecondDetector])
+	}
+
+	@Test
+	def void stopsChainWhenFalseIsReturned() {
+		// given
+		val mockResourceSet = mock(ResourceSet)
+		val String[] paths = #[]
+		val secondDetector = spy(new ChainableChangeDetectorForTesting([false], null))
+		val firstDetector = new ChainableChangeDetectorForTesting([false], secondDetector)
+
+		// when
+		firstDetector.detectChanges(mockResourceSet, paths)
+
+		// then
+		verify(secondDetector, never).handleChangeDetectionRequest(any, any, any)
+	}
+
+	@Test
+	def void stopsChainWhenSuccessorIsNull() {
+		// given
+		val mockResourceSet = mock(ResourceSet)
+		val String[] paths = #[]
+		val modifiedUriFromFirstDetector = URI.createFileURI('samplefile')
+		val firstDetector = new ChainableChangeDetectorForTesting([
+			modifiedResources += modifiedUriFromFirstDetector
+			return true
+		], null)
+
+		// when
+		val actual = firstDetector.detectChanges(mockResourceSet, paths)
+
+		// then
+		assertThat(actual.modifiedResources).containsOnly(modifiedUriFromFirstDetector)
+	}
 
 }

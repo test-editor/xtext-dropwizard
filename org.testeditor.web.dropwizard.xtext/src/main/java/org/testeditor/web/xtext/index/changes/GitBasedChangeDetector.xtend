@@ -19,7 +19,6 @@ class GitBasedChangeDetector extends ChainableChangeDetector {
 	public static val String SUCCESSOR_NAME = 'GitBasedChangeDetectorSuccessor'
 
 	@Inject GitService git
-	@Inject extension IndexFilter indexFilter
 
 	@Accessors(PUBLIC_GETTER)
 	@Inject(optional=true)
@@ -30,37 +29,10 @@ class GitBasedChangeDetector extends ChainableChangeDetector {
 
 	override protected handleChangeDetectionRequest(ResourceSet resourceSet, String[] paths, SetBasedChangedResources detectedChanges) {
 		val root = git.projectFolder
-		pullAndGetDiff.filter[isRelevantAndContainedIn(paths)].fold(detectedChanges, [ changedResources, diff |
-			changedResources.handleRelevantDiff(diff, root, resourceSet)
+		pullAndGetDiff.fold(detectedChanges, [ changedResources, diff |
+			changedResources.handleDiff(diff, root, resourceSet)
 		])
 		return successor !== null
-	}
-
-	private def isRelevantAndContainedIn(DiffEntry diff, String[] searchPaths) {
-		val relevantPath = diff.relevantPath
-		return relevantPath !== null && relevantPath.isContainedIn(searchPaths)
-	}
-
-	private def String getRelevantPath(DiffEntry diff) {
-		val root = git.projectFolder
-		val absoluteOldPath = diff.oldPath?.toAbsolutePath(root)
-		val absoluteNewPath = diff.newPath?.toAbsolutePath(root)
-
-		return if (absoluteOldPath.isRelevantForIndex) {
-			absoluteOldPath
-		} else if (absoluteNewPath.isRelevantForIndex) {
-			absoluteNewPath
-		} else {
-			null
-		}
-	}
-
-	private def isContainedIn(String path, String[] searchPaths) {
-		return searchPaths.exists[path.startsWith(it)]
-	}
-
-	private def toAbsolutePath(String path, File root) {
-		return new File(root, path).absolutePath
 	}
 
 	private def pullAndGetDiff() {
@@ -74,36 +46,19 @@ class GitBasedChangeDetector extends ChainableChangeDetector {
 		}
 	}
 
-	private def SetBasedChangedResources handleRelevantDiff(SetBasedChangedResources changedResources, DiffEntry diff, File root,
-		ResourceSet resourceSet) {
+	private def SetBasedChangedResources handleDiff(SetBasedChangedResources changedResources, DiffEntry diff, File root, ResourceSet resourceSet) {
 		logger.debug("Handling Git diff='{}'.", diff)
 		return changedResources => [
 			switch (diff.changeType) {
 				case ADD,
-				case MODIFY: {
+				case MODIFY,
+				case COPY: { modifiedResources += getAbsoluteFileURI(root, diff.newPath) }
+				case DELETE: { deletedResources += getAbsoluteFileURI(root, diff.oldPath) }
+				case RENAME: {
+					deletedResources += getAbsoluteFileURI(root, diff.oldPath)
 					modifiedResources += getAbsoluteFileURI(root, diff.newPath)
 				}
-				case COPY: {
-					if (diff.newPath.isRelevantForIndex) {
-						modifiedResources += getAbsoluteFileURI(root, diff.newPath)
-					} else {
-						logger.debug("Skipping index update for irrelevant diff='{}'.", diff)
-					}
-				}
-				case DELETE: {
-					deletedResources += getAbsoluteFileURI(root, diff.oldPath)
-				}
-				case RENAME: {
-					if (diff.oldPath.isRelevantForIndex) {
-						deletedResources += getAbsoluteFileURI(root, diff.oldPath)
-					}
-					if (diff.newPath.isRelevantForIndex) {
-						modifiedResources += getAbsoluteFileURI(root, diff.newPath)
-					}
-				}
-				default: {
-					throw new RuntimeException('''Unknown Git diff change type='«diff.changeType.name»'.''')
-				}
+				default: { throw new RuntimeException('''Unknown Git diff change type='«diff.changeType.name»'.''') }
 			}
 		]
 	}

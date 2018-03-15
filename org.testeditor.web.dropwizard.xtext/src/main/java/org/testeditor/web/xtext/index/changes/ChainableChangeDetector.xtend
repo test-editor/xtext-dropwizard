@@ -20,8 +20,8 @@ abstract class ChainableChangeDetector implements ChangeDetector {
 	}
 	
 	private final def ChangedResources handleAndProceed(ResourceSet resourceSet, String[] paths, SetBasedChangedResources detectedChanges) {
-		if (handleChangeDetectionRequest(resourceSet, paths, detectedChanges) && successor !== null) {
-			return successor.handleAndProceed(resourceSet, paths, detectedChanges)
+		if (handleChangeDetectionRequest(resourceSet, paths, detectedChanges) && getSuccessor !== null) {
+			return getSuccessor.handleAndProceed(resourceSet, paths, detectedChanges)
 		} else {
 			return detectedChanges
 		}
