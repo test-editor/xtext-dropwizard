@@ -14,11 +14,12 @@ import org.eclipse.xtext.resource.XtextResourceSet
 import org.eclipse.xtext.resource.impl.ChunkedResourceDescriptions
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
+import javax.inject.Provider
 
 @Singleton
 class BuildCycleManager {
 
-	@Inject XtextConfiguration config
+	@Inject Provider<XtextConfiguration> config
 	@Inject ChangeDetector changeDetector
 	@Inject ValidationMarkerUpdater validationUpdater
 	@Inject XtextResourceSet indexResourceSet
@@ -49,7 +50,7 @@ class BuildCycleManager {
 	}
 
 	def String[] getSearchPaths(BuildRequest request) {
-		return getStaticSearchPaths + config.localRepoFileRoot.additionalSearchPaths
+		return getStaticSearchPaths + config.get.localRepoFileRoot.additionalSearchPaths
 	}
 
 	def BuildRequest createBuildRequest() {
@@ -75,8 +76,8 @@ class BuildCycleManager {
 
 	private def getStaticSearchPaths() {
 		if (staticSearchPaths === null) {
-			val baseDir = new File(config.localRepoFileRoot)
-			staticSearchPaths = config.indexSearchPaths.map[new File(baseDir, it).absolutePath]
+			val baseDir = new File(config.get.localRepoFileRoot)
+			staticSearchPaths = config.get.indexSearchPaths.map[new File(baseDir, it).absolutePath]
 		}
 		return staticSearchPaths
 	}

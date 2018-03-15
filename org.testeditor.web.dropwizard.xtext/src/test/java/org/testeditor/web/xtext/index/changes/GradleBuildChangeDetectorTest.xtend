@@ -1,5 +1,6 @@
 package org.testeditor.web.xtext.index.changes
 
+import javax.inject.Provider
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.ResourceSet
 import org.junit.Before
@@ -28,6 +29,7 @@ class GradleBuildChangeDetectorTest {
 	@Rule public MockitoRule mockitoRule = MockitoJUnit.rule
 	@Rule public TemporaryFolder tmpDir = new TemporaryFolder
 
+	@Mock Provider<XtextConfiguration> configProvider
 	@Mock XtextConfiguration config
 	@Mock XtextBuilderUtils builderUtils
 	@Mock LanguageAccessRegistry languages
@@ -36,11 +38,12 @@ class GradleBuildChangeDetectorTest {
 	static val sampleJarPath1 = '/path/to/gradle/cache/some.jar'
 	static val sampleJarPath2 = '/path/to/gradle/cache/some.other.jar'
 
-	static val relevantFileInJar = URI.createURI('archive:' + URI.createFileURI(sampleJarPath1) + '!/relevant/file.in.jar.mydsl');
-	static val irrelevantFileInJar = URI.createURI('archive:' + URI.createFileURI(sampleJarPath1) + '!/irrelevant/file.in.jar.txt');
+	static val relevantFileInJar = URI.createURI('archive:' + URI.createFileURI(sampleJarPath1) + '!/relevant/file.in.jar.mydsl')
+	static val irrelevantFileInJar = URI.createURI('archive:' + URI.createFileURI(sampleJarPath1) + '!/irrelevant/file.in.jar.txt')
 
 	@Before
 	def void setupMocks() {
+		when(configProvider.get).thenReturn(config)
 		when(config.localRepoFileRoot).thenReturn(tmpDir.root.absolutePath)
 		when(builderUtils.collectResources(anyIterable, any, any)).thenReturn(#{relevantFileInJar})
 		when(languages.extensions).thenReturn(#['mydsl'])

@@ -6,6 +6,7 @@ import javax.inject.Inject
 import org.apache.commons.io.FilenameUtils
 import org.eclipse.emf.ecore.resource.Resource
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
+import javax.inject.Provider
 
 interface IndexFilter {
 
@@ -29,7 +30,7 @@ class LanguageExtensionBasedIndexFilter implements IndexFilter {
 
 class SearchPathBasedIndexFilter implements IndexFilter {
 
-	@Inject XtextConfiguration config
+	@Inject Provider<XtextConfiguration> config
 
 	var Iterable<Path> searchPaths = null
 
@@ -40,8 +41,8 @@ class SearchPathBasedIndexFilter implements IndexFilter {
 
 	private def Iterable<Path> getSearchPaths() {
 		if (searchPaths === null) {
-			val baseDir = new File(config.localRepoFileRoot)
-			searchPaths = config.indexSearchPaths.map[new File(baseDir, it).toPath.toAbsolutePath]
+			val baseDir = new File(config.get.localRepoFileRoot)
+			searchPaths = config.get.indexSearchPaths.map[new File(baseDir, it).toPath.toAbsolutePath]
 		}
 		return searchPaths
 	}
