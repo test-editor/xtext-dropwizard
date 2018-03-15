@@ -31,11 +31,11 @@ class BuildCycleManager {
 	var IndexState lastIndexState = new IndexState
 	var String[] staticSearchPaths = null
 
-	def init(URI baseURI) {
+	def void init(URI baseURI) {
 		this.baseURI = baseURI
 	}
 
-	def startBuild() {
+	def void startBuild() {
 		createBuildRequest.addChanges.build.updateIndex
 		updateValidationMarkers
 	}
@@ -49,7 +49,7 @@ class BuildCycleManager {
 	}
 
 	def String[] getSearchPaths(BuildRequest request) {
-		getStaticSearchPaths + config.localRepoFileRoot.additionalSearchPaths()
+		return getStaticSearchPaths + config.localRepoFileRoot.additionalSearchPaths
 	}
 
 	def BuildRequest createBuildRequest() {
@@ -65,11 +65,11 @@ class BuildCycleManager {
 		return builder.build(request, [getResourceServiceProvider]).indexState
 	}
 
-	def updateValidationMarkers() {
+	def void updateValidationMarkers() {
 		validationUpdater.updateMarkerMap
 	}
 
-	def updateIndex(IndexState indexState) {
+	def void updateIndex(IndexState indexState) {
 		index.setContainer(baseURI.toString, indexState.resourceDescriptions)
 	}
 
@@ -82,7 +82,7 @@ class BuildCycleManager {
 	}
 
 	private def getIndex() {
-		indexProvider.getIndex(indexResourceSet)
+		return indexProvider.getIndex(indexResourceSet)
 	}
 
 }
@@ -100,24 +100,32 @@ class ChunkedResourceDescriptionsProvider {
 }
 
 interface IndexSearchPathProvider {
+
 	def String[] additionalSearchPaths(String rootPath)
+
 }
 
 interface ChangeDetector {
+
 	def ChangedResources detectChanges(ResourceSet resourceSet, String[] paths)
+
 }
 
 interface ChangedResources {
+
 	def Iterable<URI> getModifiedResources()
 
 	def Iterable<URI> getDeletedResources()
+
 }
 
 class SetBasedChangedResources implements ChangedResources {
+
 	val modifiedResources = <URI>newHashSet
 	val deletedResources = <URI>newHashSet
 
-	override Set<URI> getModifiedResources() { modifiedResources }
+	override Set<URI> getModifiedResources() { return modifiedResources }
 
-	override Set<URI> getDeletedResources() { deletedResources }
+	override Set<URI> getDeletedResources() { return deletedResources }
+
 }

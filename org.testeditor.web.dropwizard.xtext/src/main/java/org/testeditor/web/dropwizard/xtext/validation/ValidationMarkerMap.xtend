@@ -46,7 +46,7 @@ class ValidationMarkerMap {
 		return validationMarkers.values
 	}
 
-	def waitForAnyNewMarkersSince(long lastAccessed, long timeoutMillis) {
+	def Iterable<ValidationSummary> waitForAnyNewMarkersSince(long lastAccessed, long timeoutMillis) {
 		return if (newMarkersAvailableSince(lastAccessed)) {
 			allMarkers
 		} else {

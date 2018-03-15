@@ -64,7 +64,7 @@ class XtextBuilderUtils {
 	/**
 	 * copied and adapted from org.eclipse.xtext.builder.standalone.StandaloneBuilder
 	 */
-	static def registerBundle(File file) {
+	static def void registerBundle(File file) {
 
 		// copied from org.eclipse.emf.mwe.utils.StandaloneSetup.registerBundle(File)
 		var JarFile jarFile = null

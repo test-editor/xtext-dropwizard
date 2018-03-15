@@ -42,7 +42,8 @@ class BuildCycleManagerTest {
 	@Mock extension IResourceServiceProvider.Registry mockResourceServiceProviderRegistry
 	@Mock ChunkedResourceDescriptionsProvider indexProvider
 	@Mock ChunkedResourceDescriptions index
-	@InjectMocks extension BuildCycleManager unitUnderTest
+
+	@InjectMocks BuildCycleManager buildCycleManagerUnderTest
 
 	val expectedModifiedResources = #[URI.createFileURI('/path/to/modified/resource')]
 	val expectedDeletedResource = #[URI.createFileURI('/path/to/deleted/resource')]
@@ -98,7 +99,7 @@ class BuildCycleManagerTest {
 		val initialBuildRequest = new BuildRequest
 
 		// when
-		val actualBuildRequest = initialBuildRequest.addChanges
+		val actualBuildRequest = buildCycleManagerUnderTest.addChanges(initialBuildRequest)
 
 		// then
 		assertThat(actualBuildRequest.deletedFiles).containsOnly(expectedDeletedResource)
@@ -109,10 +110,10 @@ class BuildCycleManagerTest {
 	@Test
 	def void createBuildRequestSetsRequiredFields() {
 		// given
-		unitUnderTest.init(URI.createFileURI(config.localRepoFileRoot))
+		buildCycleManagerUnderTest.init(URI.createFileURI(config.localRepoFileRoot))
 
 		// when
-		val actualBuildRequest = unitUnderTest.createBuildRequest
+		val actualBuildRequest = buildCycleManagerUnderTest.createBuildRequest
 
 		// then
 		assertThat(actualBuildRequest.baseDir).isEqualTo(URI.createFileURI(config.localRepoFileRoot))
@@ -124,10 +125,10 @@ class BuildCycleManagerTest {
 	@Test
 	def void createBuildRequestAlwaysUsesSameResourceSet() {
 		// given
-		val firstBuildRequest = unitUnderTest.createBuildRequest
+		val firstBuildRequest = buildCycleManagerUnderTest.createBuildRequest
 
 		// when
-		val secondBuildRequest = unitUnderTest.createBuildRequest
+		val secondBuildRequest = buildCycleManagerUnderTest.createBuildRequest
 
 		// then
 		assertThat(firstBuildRequest.resourceSet).isSameAs(secondBuildRequest.resourceSet)
@@ -138,7 +139,7 @@ class BuildCycleManagerTest {
 		// given
 		val buildRequest = sampleBuildRequest
 		// when
-		val actualIndexState = unitUnderTest.build(buildRequest)
+		val actualIndexState = buildCycleManagerUnderTest.build(buildRequest)
 
 		// then
 		assertThat(actualIndexState.resourceDescriptions.exportedObjects.head.qualifiedName.toString).isEqualTo('Test')
@@ -149,7 +150,7 @@ class BuildCycleManagerTest {
 		// given
 		val buildRequest = sampleBuildRequest
 		// when
-		unitUnderTest.build(buildRequest)
+		buildCycleManagerUnderTest.build(buildRequest)
 
 		// then
 		verify(mockValidationMarkerUpdater).afterValidate(any, any)
@@ -161,7 +162,7 @@ class BuildCycleManagerTest {
 		val buildRequest = sampleBuildRequest
 		val resourceServiceRegistryCaptor = ArgumentCaptor.forClass(Function1)
 		// when
-		unitUnderTest.build(buildRequest)
+		buildCycleManagerUnderTest.build(buildRequest)
 
 		// then
 		verify(mockIncrementalBuilder).build(eq(sampleBuildRequest), resourceServiceRegistryCaptor.capture)
@@ -173,7 +174,7 @@ class BuildCycleManagerTest {
 	@Test
 	def void updateValidationMarkersInvokesUpdateMarkerMap() {
 		// when
-		unitUnderTest.updateValidationMarkers
+		buildCycleManagerUnderTest.updateValidationMarkers
 
 		// then
 		verify(mockValidationMarkerUpdater).updateMarkerMap
@@ -185,10 +186,10 @@ class BuildCycleManagerTest {
 		val exportedObjectNames = #['modelElement', 'anotherElement']
 		val newIndexState = getMockedIndexState(exportedObjectNames)
 		val baseURI = URI.createFileURI(config.localRepoFileRoot)
-		unitUnderTest.init(baseURI)
+		buildCycleManagerUnderTest.init(baseURI)
 
 		// when
-		unitUnderTest.updateIndex(newIndexState)
+		buildCycleManagerUnderTest.updateIndex(newIndexState)
 
 		// then
 		verify(index).setContainer(baseURI.toString, newIndexState.resourceDescriptions)
