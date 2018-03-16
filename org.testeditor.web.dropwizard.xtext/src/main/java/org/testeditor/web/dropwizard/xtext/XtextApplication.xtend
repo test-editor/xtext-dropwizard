@@ -38,6 +38,8 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 	@Inject GitService gitService
 	@Inject ValidationMarkerUpdater validationMarkerUpdater
 	@Inject BuildCycleManager buildManager
+	
+	var T config
 
 	override protected initializeInjection(Bootstrap<T> bootstrap) {
 		new TerminalsStandaloneSetup().createInjectorAndDoEMFRegistration
@@ -57,6 +59,16 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 			binder.bind(IContainer.Manager).to(ProjectDescriptionBasedContainerManager)
 			binder.bind(IResourceDescriptionsProvider).to(ChunkedResourceDescriptionsProvider)
 			binder.bind(IWebResourceSetProvider).to(CustomWebResourceSetProvider)
+			
+			// A binding from the actual configuration type to the proper instance is added by the GuiceBundle.
+			// However, classes that expect an XtextConfiguration object to be injected will not receive that
+			// instance, because Guice does not traverse the subtype hierarchy that way. Therefore, a binding
+			// for the base class is added here, unless the configuration class was not subtyped, in which case
+			// the binding provided by the GuiceBundle will cover this (and another binding would yield a conflict). 
+			if (this.configurationClass !== XtextConfiguration) {
+				binder.bind(XtextConfiguration).toProvider[config]
+			}
+
 		]
 		modules += new XtextRuntimeModule
 
@@ -64,6 +76,7 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 
 	override run(T configuration, Environment environment) throws Exception {
 		super.run(configuration, environment)
+		this.config = configuration
 
 		// necessary for jackson json serializer to ignore transient fields (in xtext ContentAssistEntry)
 		// see ExampleXtextApplicationIntegrationTest.serializingContentAssistEntryWorksEvenIfEObjectIsPresent and https://stackoverflow.com/a/38956032/1839228

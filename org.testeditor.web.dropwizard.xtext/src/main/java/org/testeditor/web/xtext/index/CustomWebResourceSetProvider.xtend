@@ -21,7 +21,6 @@ class CustomWebResourceSetProvider implements IWebResourceSetProvider {
 		// class path context must be shared however, in order to allow cross references to compiled java resources!
 		resourceSet.classpathURIContext = indexProvider.indexResourceSet.classpathURIContext
 		indexProvider.project.attachToEmfObject(resourceSet)
-		println('attached project to ' + resourceSet)
 
 		return resourceSet
 	}
