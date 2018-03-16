@@ -120,9 +120,6 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 
 	@Test
 	def void createBuildRequestSetsRequiredFields() {
-		// given
-		unitUnderTest.init(URI.createFileURI(config.localRepoFileRoot))
-
 		// when
 		val actualBuildRequest = unitUnderTest.createBuildRequest
 
@@ -174,8 +171,6 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 		// given
 		val exportedObjectNames = #['modelElement', 'anotherElement']
 		val newIndexState = getMockedIndexState(exportedObjectNames)
-		val baseURI = URI.createFileURI(config.localRepoFileRoot)
-		unitUnderTest.init(baseURI)
 		val indexResourceSet = unitUnderTest.createBuildRequest.resourceSet
 
 		// when

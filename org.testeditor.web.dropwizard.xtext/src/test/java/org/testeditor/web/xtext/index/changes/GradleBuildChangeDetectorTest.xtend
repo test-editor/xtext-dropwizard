@@ -1,6 +1,6 @@
 package org.testeditor.web.xtext.index.changes
 
-import javax.inject.Provider
+import com.google.inject.Provider
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.ResourceSet
 import org.junit.Before

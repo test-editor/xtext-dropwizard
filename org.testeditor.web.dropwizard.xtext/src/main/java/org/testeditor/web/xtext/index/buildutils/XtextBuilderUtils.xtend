@@ -44,7 +44,6 @@ class XtextBuilderUtils {
 		val modelsFound = pathTraverser.resolvePathes(
 			roots.toList,
 			[ input |
-				println('''URI: «input.toString»''')
 				val matches = nameBasedFilter.matches(input)
 				if (matches) {
 					resources.add(input)

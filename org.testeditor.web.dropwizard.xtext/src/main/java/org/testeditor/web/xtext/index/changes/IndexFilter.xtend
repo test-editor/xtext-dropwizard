@@ -3,10 +3,10 @@ package org.testeditor.web.xtext.index.changes
 import java.io.File
 import java.nio.file.Path
 import javax.inject.Inject
-import org.apache.commons.io.FilenameUtils
-import org.eclipse.emf.ecore.resource.Resource
-import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import javax.inject.Provider
+import org.apache.commons.io.FilenameUtils
+import org.testeditor.web.dropwizard.xtext.XtextConfiguration
+import org.testeditor.web.xtext.index.LanguageAccessRegistry
 
 interface IndexFilter {
 
@@ -16,9 +16,11 @@ interface IndexFilter {
 
 class LanguageExtensionBasedIndexFilter implements IndexFilter {
 
+	@Inject LanguageAccessRegistry languages
+
 	override boolean isRelevantForIndex(String filePath) {
 		return if (filePath !== null) {
-			val knownLanguageExtensions = Resource.Factory.Registry.INSTANCE.extensionToFactoryMap.keySet
+			val knownLanguageExtensions = languages.extensions
 			val fileExtension = FilenameUtils.getExtension(filePath)
 			knownLanguageExtensions.exists[equalsIgnoreCase(fileExtension)]
 		} else {
