@@ -35,7 +35,7 @@ import static extension org.testeditor.web.xtext.index.buildutils.XtextBuilderUt
 
 class XtextIndexTest extends AbstractTestWithExampleLanguage {
 
-	@Rule public val tmpFolder = new TemporaryFolder
+	@Rule public val TemporaryFolder tmpFolder = new TemporaryFolder
 
 	@Inject IncrementalBuilder builder
 	@Inject LanguageAccessFactory languageAccessFactory
@@ -65,7 +65,7 @@ class XtextIndexTest extends AbstractTestWithExampleLanguage {
 		val initRequest = new BuildRequest => [
 			baseDir = tmpFolder.root.absolutePath.createFileURI
 			resourceSet = indexResourceSet
-			dirtyFiles = collectResources(#[jarFilename], indexResourceSet, languages.keySet)
+			dirtyFiles = collectResources(#[jarFilename], indexResourceSet, languages.keySet).toList
 		]
 
 		// when
@@ -102,7 +102,7 @@ class XtextIndexTest extends AbstractTestWithExampleLanguage {
 		return new ILanguageConfiguration() {
 
 			override getOutputConfigurations() {
-				configurationProvider.getOutputConfigurations()
+				return configurationProvider.getOutputConfigurations()
 			}
 
 			override getSetup() {

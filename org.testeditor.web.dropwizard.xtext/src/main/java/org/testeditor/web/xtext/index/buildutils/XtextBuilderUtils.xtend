@@ -1,9 +1,10 @@
 package org.testeditor.web.xtext.index.buildutils
 
 import java.io.File
+import java.io.FileFilter
 import java.io.IOException
 import java.net.URLClassLoader
-import java.util.List
+import java.util.Set
 import java.util.jar.JarFile
 import java.util.jar.Manifest
 import java.util.zip.ZipException
@@ -20,17 +21,27 @@ class XtextBuilderUtils {
 
 	static val logger = LoggerFactory.getLogger(XtextBuilderUtils)
 
+	static def Set<URI> collectResources(Iterable<String> roots, ResourceSet resourceSet, Iterable<String> extensions) {
+		return collectResources(roots, resourceSet, extensions, null)
+	}
+
 	/**
 	 * copied and adapted from org.eclipse.xtext.builder.standalone.StandaloneBuilder
 	 */
-	static def List<URI> collectResources(Iterable<String> roots, ResourceSet resourceSet, Iterable<String> extensions) {
+	static def Set<URI> collectResources(Iterable<String> roots, ResourceSet resourceSet, Iterable<String> extensions, FileFilter filter) {
 		val nameBasedFilter = new NameBasedFilter
 
 		// TODO test with whitespaced file extensions
 		nameBasedFilter.setRegularExpression(".*\\.(?:(" + extensions.join("|") + "))$")
 		val resources = <URI>newArrayList
 
-		val modelsFound = new PathTraverser().resolvePathes(
+		val pathTraverser = if (filter === null) {
+				new PathTraverser
+			} else {
+				new FilterablePathTraverser(filter)
+			}
+
+		val modelsFound = pathTraverser.resolvePathes(
 			roots.toList,
 			[ input |
 				println('''URI: «input.toString»''')
@@ -47,13 +58,13 @@ class XtextBuilderUtils {
 				registerBundle(file)
 			}
 		]
-		return resources
+		return resources.toSet
 	}
 
 	/**
 	 * copied and adapted from org.eclipse.xtext.builder.standalone.StandaloneBuilder
 	 */
-	static def registerBundle(File file) {
+	static def void registerBundle(File file) {
 
 		// copied from org.eclipse.emf.mwe.utils.StandaloneSetup.registerBundle(File)
 		var JarFile jarFile = null

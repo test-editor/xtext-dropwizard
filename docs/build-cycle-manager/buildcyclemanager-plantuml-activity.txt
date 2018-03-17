@@ -1,0 +1,26 @@
+@startuml
+
+title BuildCycleManager::startBuild
+
+
+start
+
+fork
+  :1.createBuildRequest;
+fork again
+  :2. getSearchPaths;
+end fork
+
+:3. addChanges;
+
+:4. build;
+
+fork
+  :5. updateIndex;
+fork again
+  :6. updateValidationMarkers;
+end fork
+
+stop
+
+@enduml

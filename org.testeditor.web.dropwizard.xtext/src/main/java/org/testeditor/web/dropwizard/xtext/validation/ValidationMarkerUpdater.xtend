@@ -82,11 +82,11 @@ class ValidationMarkerUpdater implements IIssueHandler, IPostValidationCallback 
 	}
 
 	private def previouslyCollectedSummary(String path) {
-		collectedValidationSummaries.computeIfAbsent(path, [ValidationSummary.noMarkers(path)])
+		return collectedValidationSummaries.computeIfAbsent(path, [ValidationSummary.noMarkers(path)])
 	}
 
 	private def incrementFor(ValidationSummary summary, Issue issue) {
-		summary => [
+		return summary => [
 			switch (issue.severity) {
 				case ERROR:
 					errors = errors + 1
