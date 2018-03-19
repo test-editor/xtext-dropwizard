@@ -15,7 +15,9 @@ import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.transport.JschConfigSessionFactory
 import org.eclipse.jgit.transport.OpenSshConfig.Host
 import org.eclipse.jgit.transport.SshTransport
+import org.eclipse.jgit.treewalk.AbstractTreeIterator
 import org.eclipse.jgit.treewalk.CanonicalTreeParser
+import org.eclipse.jgit.treewalk.EmptyTreeIterator
 import org.eclipse.jgit.util.FS
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.slf4j.LoggerFactory
@@ -23,8 +25,6 @@ import org.slf4j.LoggerFactory
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_URL
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_REMOTE_SECTION
 import static org.eclipse.jgit.lib.Constants.*
-import org.eclipse.jgit.treewalk.AbstractTreeIterator
-import org.eclipse.jgit.treewalk.EmptyTreeIterator
 
 /**
  * provide some service around a git repo (read only)
@@ -40,10 +40,10 @@ class GitService {
 
 	@Accessors(PUBLIC_GETTER)
 	File projectFolder
-	
+
 	String privateKeyLocation
 	String knownHostsLocation
-	
+
 	/** 
 	 * initialize this git service. either open the existing git and pull, or clone the remote repo
 	 */
@@ -59,9 +59,9 @@ class GitService {
 			cloneRepository(projectFolder, remoteRepoUrl)
 		}
 	}
-	
+
 	def void init(String localRepoFileRoot, String remoteRepoUrl) {
-	    init(localRepoFileRoot, remoteRepoUrl, null, null)
+		init(localRepoFileRoot, remoteRepoUrl, null, null)
 	}
 
 	private def File verifyIsFolderOrNonExistent(String localRepoFileRoot) {
@@ -86,7 +86,7 @@ class GitService {
 		command.setSshSessionFactory
 		return command
 	}
-	
+
 	def void pull() {
 		git.pull.configureTransport.call
 	}
@@ -101,7 +101,7 @@ class GitService {
 	def List<DiffEntry> calculateDiff(String oldHeadCommit, String newHeadCommit) {
 		return calculateDiff(ObjectId.fromString(oldHeadCommit), ObjectId.fromString(newHeadCommit))
 	}
-	
+
 	/**
 	 * Calculates diff of the provided commit against the empty tree.
 	 * 
@@ -127,7 +127,7 @@ class GitService {
 			reader.close
 		}
 	}
-	
+
 	private def List<DiffEntry> calculateDiffAgainstEmptyTree(ObjectId newHead) {
 		logger.info("Calculating diff of '{}' against empty tree.", newHead.getName)
 		val reader = git.repository.newObjectReader
@@ -139,13 +139,12 @@ class GitService {
 			reader.close
 		}
 	}
-	
+
 	private def List<DiffEntry> calculateDiff(AbstractTreeIterator oldTree, AbstractTreeIterator newTree) {
-			val diff = git.diff.setOldTree(oldTree).setNewTree(newTree).call
-			logger.info("Calculated diff='{}'.", diff)
-			return diff
+		val diff = git.diff.setOldTree(oldTree).setNewTree(newTree).call
+		logger.info("Calculated diff='{}'.", diff)
+		return diff
 	}
-	
 
 	private def void cloneRepository(File projectFolder, String remoteRepoUrl) {
 		val cloneCommand = Git.cloneRepository => [
@@ -181,7 +180,7 @@ class GitService {
 	}
 
 	private def <T, C extends GitCommand<T>> void setSshSessionFactory(TransportCommand<C, ?> command) {
-		
+
 		val sshSessionFactory = new JschConfigSessionFactory {
 
 			override protected void configure(Host host, Session session) {
@@ -207,7 +206,7 @@ class GitService {
 			}
 
 		}
-		
+
 		command.transportConfigCallback = [ transport |
 			if (transport instanceof SshTransport) {
 				transport.sshSessionFactory = sshSessionFactory
@@ -215,5 +214,5 @@ class GitService {
 		]
 
 	}
-	
+
 }

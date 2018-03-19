@@ -45,8 +45,8 @@ class BuildCycleManagerTest {
 
 	@InjectMocks BuildCycleManager buildCycleManagerUnderTest
 
-	val expectedModifiedResources = #[URI.createFileURI('/path/to/modified/resource')]
-	val expectedDeletedResource = #[URI.createFileURI('/path/to/deleted/resource')]
+	val expectedModifiedResources = #{ URI.createFileURI('/path/to/modified/resource') }
+	val expectedDeletedResource = #{ URI.createFileURI('/path/to/deleted/resource') }
 	val initialIndexState = new IndexState
 
 	var BuildRequest sampleBuildRequest
@@ -59,13 +59,13 @@ class BuildCycleManagerTest {
 			baseDir = URI.createFileURI(config.localRepoFileRoot)
 			resourceSet = mockResourceSet
 			afterValidate = mockValidationMarkerUpdater
-			deletedFiles = expectedDeletedResource
-			dirtyFiles = expectedModifiedResources
+			deletedFiles += expectedDeletedResource
+			dirtyFiles += expectedModifiedResources
 			state = initialIndexState
 		]
 
 		when(mockSearchPathProvider.additionalSearchPaths(config.localRepoFileRoot)).thenReturn(#['/base/dir/some.jar'])
-		when(mockChangeDetector.detectChanges(eq(mockResourceSet), any)).thenReturn(mockChangedResources)
+		when(mockChangeDetector.detectChanges(eq(mockResourceSet), any, any)).thenReturn(mockChangedResources)
 		when(mockChangedResources.modifiedResources).thenReturn(expectedModifiedResources)
 		when(mockChangedResources.deletedResources).thenReturn(expectedDeletedResource)
 

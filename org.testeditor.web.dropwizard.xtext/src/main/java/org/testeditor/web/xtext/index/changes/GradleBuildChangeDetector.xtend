@@ -9,15 +9,14 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.util.concurrent.TimeUnit
-import javax.inject.Named
 import javax.inject.Singleton
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.ResourceSet
-import org.eclipse.xtend.lib.annotations.Accessors
 import org.slf4j.LoggerFactory
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
+import org.testeditor.web.xtext.index.ChangeDetector
+import org.testeditor.web.xtext.index.ChangedResources
 import org.testeditor.web.xtext.index.LanguageAccessRegistry
-import org.testeditor.web.xtext.index.SetBasedChangedResources
 import org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils
 
 import static com.google.common.base.Suppliers.memoize
@@ -29,22 +28,17 @@ import static extension com.google.common.collect.Sets.difference
  * reported the 'build.gradle' file to have changed. 
  */
 @Singleton
-class GradleBuildChangeDetector extends ChainableChangeDetector {
+class GradleBuildChangeDetector implements ChangeDetector {
 
 	static val BUILD_GRADLE_FILE_NAME = 'build.gradle'
 	static val GRADLE_PROCESS_TIMEOUT_MINUTES = 10
 	static val logger = LoggerFactory.getLogger(GradleBuildChangeDetector)
 
 	public static val String SUCCESSOR_NAME = 'GradleBuildChangeDetectorSuccessor'
-	
+
 	@Inject
 	extension XtextBuilderUtils builderUtils
 
-	@Accessors(PUBLIC_GETTER)
-	@Inject(optional=true)
-	@Named(SUCCESSOR_NAME)
-	ChainableChangeDetector successor
-	
 	@Inject LanguageAccessRegistry languages
 
 	@Inject XtextConfiguration config
@@ -53,12 +47,12 @@ class GradleBuildChangeDetector extends ChainableChangeDetector {
 	var projectRoot = memoize[new File(config.localRepoFileRoot)]
 	var lastDetectedResources = <URI>emptySet
 
-	override protected handleChangeDetectionRequest(ResourceSet resourceSet, String[] paths, SetBasedChangedResources detectedChanges) {
-		if (detectedChanges.modifiedResources.exists[buildScriptPath.get.equals(path)]) {
+	override detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
+		if (accumulatedChanges.modifiedResources.exists[buildScriptPath.get.equals(path)]) {
 			runGradleAssemble(projectRoot.get)
 			prepareGradleTask(projectRoot.get)
 			val detectedResources = collectClasspathJarsViaGradle(projectRoot.get).collectResources(resourceSet, languages.extensions)
-			detectedChanges => [
+			accumulatedChanges => [
 				// conservatively assume that all resources found have also been modified.
 				// There may be room for optimization here, e.g. checking whether underlying 
 				// jars have actually been modified (last modified meta-data of file)
@@ -67,7 +61,7 @@ class GradleBuildChangeDetector extends ChainableChangeDetector {
 			]
 			lastDetectedResources = detectedResources
 		}
-		return successor !== null
+		return accumulatedChanges
 	}
 
 	/** make sure the task 'printTestClasspath' exists */

@@ -1,7 +1,5 @@
 package org.testeditor.web.xtext.index.changes
 
-import com.google.inject.Guice
-import com.google.inject.name.Names
 import java.io.File
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.ResourceSet
@@ -16,6 +14,7 @@ import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.MockitoJUnit
 import org.mockito.junit.MockitoRule
+import org.testeditor.web.xtext.index.ChangedResources
 import org.testeditor.web.xtext.index.persistence.GitService
 
 import static org.assertj.core.api.Assertions.assertThat
@@ -56,7 +55,7 @@ class GitBasedChangeDetectorTest {
 		when(mockGit.allFilesAsDiff(headOnInitialUpdate.name())).thenReturn(diffs)
 
 		// when
-		val actualChanges = unitUnderTest.detectChanges(mockResourceSet, #[root.absolutePath])
+		val actualChanges = unitUnderTest.detectChanges(mockResourceSet, #[root.absolutePath], new ChangedResources)
 
 		// then
 		assertThat(actualChanges.modifiedResources).containsOnly(
@@ -83,16 +82,17 @@ class GitBasedChangeDetectorTest {
 		]
 
 		when(mockGit.allFilesAsDiff(headOnInitialUpdate.name())).thenReturn(diffs)
-		when(mockGit.calculateDiff(headOnInitialUpdate.name(), headOnSubsequentUpdate.name())).thenReturn(diffs)
 
-		unitUnderTest.detectChanges(mockResourceSet, #[root.absolutePath])
+		unitUnderTest.detectChanges(mockResourceSet, #[root.absolutePath], new ChangedResources)
+
+		when(mockGit.calculateDiff(headOnInitialUpdate.name(), headOnSubsequentUpdate.name())).thenReturn(diffs)
 
 		doAnswer[
 			when(mockGit.headTree).thenReturn(headOnSubsequentUpdate)
 		].when(mockGit).pull
 
 		// when
-		val actualChanges = unitUnderTest.detectChanges(mockResourceSet, #[root.absolutePath])
+		val actualChanges = unitUnderTest.detectChanges(mockResourceSet, #[root.absolutePath], new ChangedResources)
 
 		// then
 		assertThat(actualChanges.modifiedResources).containsOnly(
@@ -105,25 +105,6 @@ class GitBasedChangeDetectorTest {
 			toAbsoluteFileUri(root, 'theOldRenamed.txt'),
 			toAbsoluteFileUri(root, 'theDeleted.txt')
 		)
-	}
-
-	@Test
-	def void returnsSuccessorIfProvided() {
-		// given
-		val expectedSuccessor = mock(ChainableChangeDetector)
-		val injector = Guice.createInjector [
-			bind(GitService).toInstance(mock(GitService))
-			bind(IndexFilter).toInstance(mock(IndexFilter))
-			bind(ResourceSet).toInstance(mock(ResourceSet))
-			bind(ChainableChangeDetector).annotatedWith(Names.named(GitBasedChangeDetector.SUCCESSOR_NAME)).toInstance(expectedSuccessor)
-		]
-
-		// when
-		val unitUnderTest = injector.getInstance(GitBasedChangeDetector)
-		val actualSuccessor = unitUnderTest.successor
-
-		// then
-		assertThat(actualSuccessor).isSameAs(expectedSuccessor)
 	}
 
 	private def DiffEntry mockDiffEntry(ChangeType type, String newPath, String oldPath) {

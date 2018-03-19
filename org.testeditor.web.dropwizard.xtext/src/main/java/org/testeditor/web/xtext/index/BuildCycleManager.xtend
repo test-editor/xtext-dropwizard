@@ -42,7 +42,7 @@ class BuildCycleManager {
 
 	def BuildRequest addChanges(BuildRequest request) {
 		return request => [
-			val changes = changeDetector.detectChanges(indexResourceSet, searchPaths)
+			val changes = changeDetector.detectChanges(indexResourceSet, searchPaths, new ChangedResources)
 			dirtyFiles += changes.modifiedResources
 			deletedFiles += changes.deletedResources
 		]
@@ -107,25 +107,17 @@ interface IndexSearchPathProvider {
 
 interface ChangeDetector {
 
-	def ChangedResources detectChanges(ResourceSet resourceSet, String[] paths)
+	def ChangedResources detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges)
 
 }
 
-interface ChangedResources {
-
-	def Iterable<URI> getModifiedResources()
-
-	def Iterable<URI> getDeletedResources()
-
-}
-
-class SetBasedChangedResources implements ChangedResources {
+class ChangedResources {
 
 	val modifiedResources = <URI>newHashSet
 	val deletedResources = <URI>newHashSet
 
-	override Set<URI> getModifiedResources() { return modifiedResources }
+	def Set<URI> getModifiedResources() { return modifiedResources }
 
-	override Set<URI> getDeletedResources() { return deletedResources }
+	def Set<URI> getDeletedResources() { return deletedResources }
 
 }

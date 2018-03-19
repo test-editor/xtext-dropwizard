@@ -16,12 +16,13 @@ interface IndexFilter {
 class LanguageExtensionBasedIndexFilter implements IndexFilter {
 
 	override boolean isRelevantForIndex(String filePath) {
-		if (filePath === null) {
-			return false
+		return if (filePath !== null) {
+			val knownLanguageExtensions = Resource.Factory.Registry.INSTANCE.extensionToFactoryMap.keySet
+			val fileExtension = FilenameUtils.getExtension(filePath)
+			knownLanguageExtensions.exists[equalsIgnoreCase(fileExtension)]
+		} else {
+			false
 		}
-		val knownLanguageExtensions = Resource.Factory.Registry.INSTANCE.extensionToFactoryMap.keySet
-		val fileExtension = FilenameUtils.getExtension(filePath).toLowerCase
-		return knownLanguageExtensions.exists[ext|ext.toLowerCase == fileExtension]
 	}
 
 }
@@ -33,7 +34,8 @@ class SearchPathBasedIndexFilter implements IndexFilter {
 	var Iterable<Path> searchPaths = null
 
 	override boolean isRelevantForIndex(String path) {
-		return getSearchPaths.exists[new File(path).toPath.toAbsolutePath.startsWith(it)]
+		val absolutePath = new File(path).toPath.toAbsolutePath
+		return getSearchPaths.exists[absolutePath.startsWith(it)]
 	}
 
 	private def Iterable<Path> getSearchPaths() {
