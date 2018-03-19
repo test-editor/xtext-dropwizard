@@ -9,9 +9,11 @@ import org.xtext.example.mydsl.MyDslStandaloneSetup
  */
 abstract class AbstractTestWithExampleLanguage extends AbstractTest {
 
+	protected static val MyDslStandaloneSetup myDslSetup = new MyDslStandaloneSetup
+
 	@BeforeClass
 	static def void registerSampleLanguage() {
-		new MyDslStandaloneSetup().createInjectorAndDoEMFRegistration
+		myDslSetup.createInjectorAndDoEMFRegistration
 	}
 
 }

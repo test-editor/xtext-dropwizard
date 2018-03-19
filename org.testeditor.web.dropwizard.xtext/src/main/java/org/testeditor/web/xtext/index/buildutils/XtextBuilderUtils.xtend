@@ -21,14 +21,14 @@ class XtextBuilderUtils {
 
 	static val logger = LoggerFactory.getLogger(XtextBuilderUtils)
 
-	static def Set<URI> collectResources(Iterable<String> roots, ResourceSet resourceSet, Iterable<String> extensions) {
+	def Set<URI> collectResources(Iterable<String> roots, ResourceSet resourceSet, Iterable<String> extensions) {
 		return collectResources(roots, resourceSet, extensions, null)
 	}
 
 	/**
 	 * copied and adapted from org.eclipse.xtext.builder.standalone.StandaloneBuilder
 	 */
-	static def Set<URI> collectResources(Iterable<String> roots, ResourceSet resourceSet, Iterable<String> extensions, FileFilter filter) {
+	def Set<URI> collectResources(Iterable<String> roots, ResourceSet resourceSet, Iterable<String> extensions, FileFilter filter) {
 		val nameBasedFilter = new NameBasedFilter
 
 		// TODO test with whitespaced file extensions
@@ -64,7 +64,7 @@ class XtextBuilderUtils {
 	/**
 	 * copied and adapted from org.eclipse.xtext.builder.standalone.StandaloneBuilder
 	 */
-	static def void registerBundle(File file) {
+	def void registerBundle(File file) {
 
 		// copied from org.eclipse.emf.mwe.utils.StandaloneSetup.registerBundle(File)
 		var JarFile jarFile = null
@@ -101,7 +101,7 @@ class XtextBuilderUtils {
 	/**
 	 * copied and adapted from org.eclipse.xtext.builder.standalone.StandaloneBuilder
 	 */
-	static def void installTypeProvider(XtextResourceSet resourceSet, Iterable<String> classPathRoots) {
+	def void installTypeProvider(XtextResourceSet resourceSet, Iterable<String> classPathRoots) {
 		val classLoader = createURLClassLoader(classPathRoots)
 		new ClasspathTypeProvider(classLoader, resourceSet, null, null)
 		resourceSet.setClasspathURIContext(classLoader)
@@ -110,7 +110,7 @@ class XtextBuilderUtils {
 	/**
 	 * copied and adapted from org.eclipse.xtext.builder.standalone.StandaloneBuilder
 	 */
-	static def private URLClassLoader createURLClassLoader(Iterable<String> classPathEntries) {
+	def private URLClassLoader createURLClassLoader(Iterable<String> classPathEntries) {
 		val classPathUrls = classPathEntries.map[str|new File(str).toURI.toURL]
 		return new URLClassLoader(classPathUrls)
 	}

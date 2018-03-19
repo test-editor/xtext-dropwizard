@@ -1,6 +1,7 @@
-package org.testeditor.web.xtext.index.persistence
+package org.testeditor.web.xtext.index.changes
 
 import com.google.common.io.CharStreams
+import com.google.inject.Inject
 import java.io.File
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
@@ -8,52 +9,59 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.util.concurrent.TimeUnit
-import javax.inject.Inject
 import javax.inject.Singleton
-import org.eclipse.xtext.build.BuildRequest
-import org.eclipse.xtext.build.IncrementalBuilder
-import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
+import org.eclipse.emf.common.util.URI
+import org.eclipse.emf.ecore.resource.ResourceSet
 import org.slf4j.LoggerFactory
-import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
+import org.testeditor.web.dropwizard.xtext.XtextConfiguration
+import org.testeditor.web.xtext.index.ChangeDetector
+import org.testeditor.web.xtext.index.ChangedResources
+import org.testeditor.web.xtext.index.LanguageAccessRegistry
 import org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils
 
-import static extension org.eclipse.emf.common.util.URI.createFileURI
+import static com.google.common.base.Suppliers.memoize
 
+import static extension com.google.common.collect.Sets.difference
+
+/**
+ * Invokes a Gradle build job, if a previous change detector in the chain
+ * reported the 'build.gradle' file to have changed. 
+ */
 @Singleton
-class GradleProjectIndexUpdater extends IndexUpdater {
+class GradleBuildChangeDetector implements ChangeDetector {
 
+	static val BUILD_GRADLE_FILE_NAME = 'build.gradle'
 	static val GRADLE_PROCESS_TIMEOUT_MINUTES = 10
+	static val logger = LoggerFactory.getLogger(GradleBuildChangeDetector)
 
-	static val logger = LoggerFactory.getLogger(GradleProjectIndexUpdater)
+	public static val String SUCCESSOR_NAME = 'GradleBuildChangeDetectorSuccessor'
 
-	@Inject IncrementalBuilder builder
-	@Inject ValidationMarkerUpdater validationMarkerUpdater
-	@Inject extension XtextBuilderUtils builderUtils
+	@Inject
+	extension XtextBuilderUtils builderUtils
 
-	override def void initIndex(File projectRoot) {
-		val basePath = projectRoot.absolutePath
+	@Inject LanguageAccessRegistry languages
 
-		if (new File(basePath, 'build.gradle').exists) {
-			runGradleAssemble(projectRoot)
-			prepareGradleTask(projectRoot)
-			val jars = collectClasspathJarsViaGradle(projectRoot)
-			val initRequest = new BuildRequest => [
-				baseDir = basePath.createFileURI
-				resourceSet = index.resourceSet
-				dirtyFiles = collectResources(
-					#[basePath + "/src/main/java", basePath + '/src/test/java', basePath + '/build/classes/java/main'] + jars, resourceSet,
-					languageAccessors.keySet).toList
-				afterValidate = validationMarkerUpdater
+	@Inject XtextConfiguration config
+
+	var buildScriptPath = memoize[new File(projectRoot.get, BUILD_GRADLE_FILE_NAME).absolutePath]
+	var projectRoot = memoize[new File(config.localRepoFileRoot)]
+	var lastDetectedResources = <URI>emptySet
+
+	override detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
+		if (accumulatedChanges.modifiedResources.exists[buildScriptPath.get.equals(path)]) {
+			runGradleAssemble(projectRoot.get)
+			prepareGradleTask(projectRoot.get)
+			val detectedResources = collectClasspathJarsViaGradle(projectRoot.get).collectResources(resourceSet, languages.extensions)
+			accumulatedChanges => [
+				// conservatively assume that all resources found have also been modified.
+				// There may be room for optimization here, e.g. checking whether underlying 
+				// jars have actually been modified (last modified meta-data of file)
+				modifiedResources += detectedResources
+				deletedResources += lastDetectedResources.difference(detectedResources.toSet)
 			]
-
-			initRequest.resourceSet.installTypeProvider(jars)
-			val result = builder.build(initRequest, [languageAccessors.get(fileExtension).resourceServiceProvider])
-			index.init(result.indexState.resourceDescriptions, initRequest.resourceSet)
-			validationMarkerUpdater.updateMarkerMap
-		} else {
-			index.init(new ResourceDescriptionsData(emptyList), index.resourceSet)
-			super.initIndex(projectRoot)
+			lastDetectedResources = detectedResources
 		}
+		return accumulatedChanges
 	}
 
 	/** make sure the task 'printTestClasspath' exists */

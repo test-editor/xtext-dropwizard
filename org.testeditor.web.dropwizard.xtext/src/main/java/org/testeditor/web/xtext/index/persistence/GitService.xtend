@@ -15,7 +15,9 @@ import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.transport.JschConfigSessionFactory
 import org.eclipse.jgit.transport.OpenSshConfig.Host
 import org.eclipse.jgit.transport.SshTransport
+import org.eclipse.jgit.treewalk.AbstractTreeIterator
 import org.eclipse.jgit.treewalk.CanonicalTreeParser
+import org.eclipse.jgit.treewalk.EmptyTreeIterator
 import org.eclipse.jgit.util.FS
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.slf4j.LoggerFactory
@@ -38,10 +40,10 @@ class GitService {
 
 	@Accessors(PUBLIC_GETTER)
 	File projectFolder
-	
+
 	String privateKeyLocation
 	String knownHostsLocation
-	
+
 	/** 
 	 * initialize this git service. either open the existing git and pull, or clone the remote repo
 	 */
@@ -57,9 +59,9 @@ class GitService {
 			cloneRepository(projectFolder, remoteRepoUrl)
 		}
 	}
-	
+
 	def void init(String localRepoFileRoot, String remoteRepoUrl) {
-	    init(localRepoFileRoot, remoteRepoUrl, null, null)
+		init(localRepoFileRoot, remoteRepoUrl, null, null)
 	}
 
 	private def File verifyIsFolderOrNonExistent(String localRepoFileRoot) {
@@ -84,7 +86,7 @@ class GitService {
 		command.setSshSessionFactory
 		return command
 	}
-	
+
 	def void pull() {
 		git.pull.configureTransport.call
 	}
@@ -100,18 +102,48 @@ class GitService {
 		return calculateDiff(ObjectId.fromString(oldHeadCommit), ObjectId.fromString(newHeadCommit))
 	}
 
+	/**
+	 * Calculates diff of the provided commit against the empty tree.
+	 * 
+	 * This basically lists all files under version control up to the specified
+	 * commit, i.e. all diff entries being returned are going to be of change
+	 * type 'ADD'. This is handy for change detection, to handle a situation
+	 * in which all files need to be treated as new (e.g. after the working copy
+	 * has just been cloned from a remote) in the same manner as any other diff
+	 * against a specific revision. 
+	 */
+	def List<DiffEntry> allFilesAsDiff(String newHeadCommit) {
+		return calculateDiffAgainstEmptyTree(ObjectId.fromString(newHeadCommit))
+	}
+
 	private def List<DiffEntry> calculateDiff(ObjectId oldHead, ObjectId newHead) {
 		logger.info("Calculating diff between old='{}' and new='{}'.", oldHead.getName, newHead.getName)
 		val reader = git.repository.newObjectReader
 		try {
 			val oldTree = new CanonicalTreeParser => [reset(reader, oldHead)]
 			val newTree = new CanonicalTreeParser => [reset(reader, newHead)]
-			val diff = git.diff.setOldTree(oldTree).setNewTree(newTree).call
-			logger.info("Calculated diff='{}'.", diff)
-			return diff
+			return calculateDiff(oldTree, newTree)
 		} finally {
 			reader.close
 		}
+	}
+
+	private def List<DiffEntry> calculateDiffAgainstEmptyTree(ObjectId newHead) {
+		logger.info("Calculating diff of '{}' against empty tree.", newHead.getName)
+		val reader = git.repository.newObjectReader
+		try {
+			val oldTree = new EmptyTreeIterator
+			val newTree = new CanonicalTreeParser => [reset(reader, newHead)]
+			return calculateDiff(oldTree, newTree)
+		} finally {
+			reader.close
+		}
+	}
+
+	private def List<DiffEntry> calculateDiff(AbstractTreeIterator oldTree, AbstractTreeIterator newTree) {
+		val diff = git.diff.setOldTree(oldTree).setNewTree(newTree).call
+		logger.info("Calculated diff='{}'.", diff)
+		return diff
 	}
 
 	private def void cloneRepository(File projectFolder, String remoteRepoUrl) {
@@ -148,7 +180,7 @@ class GitService {
 	}
 
 	private def <T, C extends GitCommand<T>> void setSshSessionFactory(TransportCommand<C, ?> command) {
-		
+
 		val sshSessionFactory = new JschConfigSessionFactory {
 
 			override protected void configure(Host host, Session session) {
@@ -174,7 +206,7 @@ class GitService {
 			}
 
 		}
-		
+
 		command.transportConfigCallback = [ transport |
 			if (transport instanceof SshTransport) {
 				transport.sshSessionFactory = sshSessionFactory
@@ -182,5 +214,5 @@ class GitService {
 		]
 
 	}
-	
+
 }
