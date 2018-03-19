@@ -125,10 +125,16 @@ class ChunkedResourceDescriptionsProvider implements IResourceDescriptionsProvid
 
 	override ChunkedResourceDescriptions getResourceDescriptions(ResourceSet resourceSet) {
 		return if (resourceSet !== indexResourceSet) {
-			ChunkedResourceDescriptions.findInEmfObject(indexResourceSet) ?:
-				resourceDescriptions.createShallowCopyWith(resourceSet)
+			resourceSet.registerWithProject
+			ChunkedResourceDescriptions.findInEmfObject(indexResourceSet) ?: resourceDescriptions.createShallowCopyWith(resourceSet)
 		} else {
 			resourceDescriptions
+		}
+	}
+
+	private def registerWithProject(ResourceSet resourceSet) {
+		if (ProjectDescription.findInEmfObject(resourceSet) === null) {
+			project.get.attachToEmfObject(resourceSet)
 		}
 	}
 
