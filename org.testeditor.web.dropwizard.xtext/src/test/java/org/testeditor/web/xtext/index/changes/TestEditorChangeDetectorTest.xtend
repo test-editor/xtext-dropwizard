@@ -99,13 +99,13 @@ class TestEditorChangeDetectorTest extends AbstractTestWithExampleLanguage {
 		]
 
 		when(mockGit.allFilesAsDiff(headOnInitialUpdate.name())).thenReturn(diffs)
-		when(mockGit.calculateDiff(headOnInitialUpdate.name(), headOnSubsequentUpdate.name())).thenReturn(diffs)
 
 		changeDetectorUnderTest.detectChanges(mockResourceSet, #[root.absolutePath], new ChangedResources)
 
 		doAnswer[
 			when(mockGit.headTree).thenReturn(headOnSubsequentUpdate)
 		].when(mockGit).pull
+		when(mockGit.calculateDiff(headOnInitialUpdate.name(), headOnSubsequentUpdate.name())).thenReturn(diffs)
 
 		// when
 		val actualChanges = changeDetectorUnderTest.detectChanges(mockResourceSet, #[root.absolutePath], new ChangedResources)

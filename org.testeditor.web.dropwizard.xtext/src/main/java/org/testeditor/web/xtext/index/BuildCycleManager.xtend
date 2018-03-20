@@ -29,9 +29,8 @@ class BuildCycleManager {
 	@Inject Provider<XtextConfiguration> config
 	@Inject ChangeDetector changeDetector
 	@Inject ValidationMarkerUpdater validationUpdater
-	@Inject XtextResourceSet indexResourceSet
 	@Inject IncrementalBuilder builder
-	@Inject ChunkedResourceDescriptionsProvider indexProvider
+	@Inject ChunkedResourceDescriptionsProvider resourceDescriptionsProvider
 	@Inject extension IndexSearchPathProvider searchPathProvider
 	@Inject extension IResourceServiceProvider.Registry resourceServiceProviderFactory
 
@@ -47,7 +46,7 @@ class BuildCycleManager {
 
 	def BuildRequest addChanges(BuildRequest request) {
 		return request => [
-			val changes = changeDetector.detectChanges(indexResourceSet, searchPaths, new ChangedResources)
+			val changes = changeDetector.detectChanges(resourceDescriptionsProvider.indexResourceSet, searchPaths, new ChangedResources)
 			dirtyFiles += changes.modifiedResources
 			deletedFiles += changes.deletedResources
 		]
@@ -61,7 +60,7 @@ class BuildCycleManager {
 		return new BuildRequest => [
 			baseDir = baseURI.get
 			afterValidate = validationUpdater
-			resourceSet = indexProvider.indexResourceSet
+			resourceSet = resourceDescriptionsProvider.indexResourceSet
 			state = lastIndexState
 		]
 	}
@@ -75,8 +74,8 @@ class BuildCycleManager {
 	}
 
 	def void updateIndex(IndexState indexState) {
-		val projectName = indexProvider.project.name
-		val index = indexProvider.getResourceDescriptions()
+		val projectName = resourceDescriptionsProvider.project.name
+		val index = resourceDescriptionsProvider.resourceDescriptions
 
 		index.setContainer(projectName, indexState.resourceDescriptions)
 	}
@@ -123,6 +122,18 @@ class ChunkedResourceDescriptionsProvider implements IResourceDescriptionsProvid
 		return index
 	}
 
+	/**
+	 * Get the resource descriptions (i.e. the content of the index) maintained by
+	 * {@link org.testeditor.web.xtext.index.BuildCycleManager BuildCycleManager}.
+	 * 
+	 * This class uses a fixed resource set which is associated with its index.
+	 * If a different resource set is passed in, a shallow copy of the index is
+	 * returned, registered with the given resource set (either a previously
+	 * registered index, or, if none is found, a newly copied and registered
+	 * instance).
+	 * Note that the same resource descriptions instance can only be associated
+	 * with a single resource set, which is why the copying is necessary.
+	 */
 	override ChunkedResourceDescriptions getResourceDescriptions(ResourceSet resourceSet) {
 		return if (resourceSet !== indexResourceSet) {
 			resourceSet.registerWithProject

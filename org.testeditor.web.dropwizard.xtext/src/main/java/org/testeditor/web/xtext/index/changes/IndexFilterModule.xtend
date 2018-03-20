@@ -9,11 +9,9 @@ import javax.inject.Inject
  * Private Guice module provided as default / sample for wiring up an index change filter.
  * 
  * In particular, installing this module exposes a binding for 
- * {@link org.testeditor.web.xtext.index.changes.ChangeFilter ChangeFilter},
- * which has its {@link org.testeditor.web.xtext.index.changes.IndexFilter IndexFilter}
- * wired to a {@link org.testeditor.web.xtext.index.changes.LogicalAndBasedIndexFilter LogicalAndBasedIndexFilter},
- * which in turn combines a {@link org.testeditor.web.xtext.index.changes.SearchPathBasedIndexFilter SearchPathBasedIndexFilter}
- * and a {@link org.testeditor.web.xtext.index.changes.LanguageExtensionBasedIndexFilter LanguageExtensionBasedIndexFilter}.
+ * {@link ChangeFilter}, which has its {@link org.testeditor.web.xtext.index.changes.IndexFilter IndexFilter}
+ * wired to a {@link LogicalAndBasedIndexFilter}, which in turn combines a {@link SearchPathBasedIndexFilter}
+ * and a {@link LanguageExtensionBasedIndexFilter}.
  */
 class IndexFilterModule extends PrivateModule {
 

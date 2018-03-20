@@ -37,7 +37,7 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 	protected extension val JGitTestUtils = new JGitTestUtils
 	protected extension val FileTestUtils = new FileTestUtils
 
-	@Inject extension BuildCycleManager unitUnderTest
+	@Inject BuildCycleManager buildManagerUnderTest
 	@Inject XtextResourceSet xtextResourceSet
 	@Inject ValidationMarkerUpdater validationMarkerUpdater
 	@Inject GitService gitService
@@ -107,12 +107,12 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 	}
 
 	@Test
-	def void detectChangesReturnsModifiedFiles() {
+	def void detectChangesReturnsIndexRelevantModifiedFiles() {
 		// given
 		val initialBuildRequest = new BuildRequest
 
 		// when
-		val actualBuildRequest = initialBuildRequest.addChanges
+		val actualBuildRequest = buildManagerUnderTest.addChanges(initialBuildRequest)
 
 		// then
 		assertThat(actualBuildRequest.dirtyFiles).containsOnly(URI.createFileURI(config.localRepoFileRoot + '/src/test/java/Demo.mydsl'))
@@ -121,7 +121,7 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 	@Test
 	def void createBuildRequestSetsRequiredFields() {
 		// when
-		val actualBuildRequest = unitUnderTest.createBuildRequest
+		val actualBuildRequest = buildManagerUnderTest.createBuildRequest
 
 		// then
 		assertThat(actualBuildRequest.baseDir).isEqualTo(URI.createFileURI(config.localRepoFileRoot))
@@ -133,10 +133,10 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 	@Test
 	def void createBuildRequestAlwaysUsesSameResourceSet() {
 		// given
-		val firstBuildRequest = unitUnderTest.createBuildRequest
+		val firstBuildRequest = buildManagerUnderTest.createBuildRequest
 
 		// when
-		val secondBuildRequest = unitUnderTest.createBuildRequest
+		val secondBuildRequest = buildManagerUnderTest.createBuildRequest
 
 		// then
 		assertThat(firstBuildRequest.resourceSet).isSameAs(secondBuildRequest.resourceSet)
@@ -148,7 +148,7 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 		val buildRequest = sampleBuildRequest
 
 		// when
-		val actualIndexState = unitUnderTest.build(buildRequest)
+		val actualIndexState = buildManagerUnderTest.build(buildRequest)
 
 		// then
 		assertThat(actualIndexState.resourceDescriptions.exportedObjects.head.qualifiedName.toString).isEqualTo('Peter')
@@ -160,7 +160,7 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 		val buildRequest = sampleBuildRequest
 
 		// when
-		unitUnderTest.build(buildRequest)
+		buildManagerUnderTest.build(buildRequest)
 
 		// then
 		verify(validationMarkerUpdater).afterValidate(any, any)
@@ -171,13 +171,14 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 		// given
 		val exportedObjectNames = #['modelElement', 'anotherElement']
 		val newIndexState = getMockedIndexState(exportedObjectNames)
-		val indexResourceSet = unitUnderTest.createBuildRequest.resourceSet
+		val indexResourceSet = buildManagerUnderTest.createBuildRequest.resourceSet
 
 		// when
-		unitUnderTest.updateIndex(newIndexState)
+		buildManagerUnderTest.updateIndex(newIndexState)
 
 		// then
-		assertThat(indexProvider.getResourceDescriptions(indexResourceSet).exportedObjects.head.qualifiedName.toString).isEqualTo('modelElement')
+		assertThat(indexProvider.getResourceDescriptions(indexResourceSet).exportedObjects.map[qualifiedName.toString])
+				.containsOnly('modelElement', 'anotherElement')
 	}
 
 	private def getMockedIndexState(Iterable<String> eObjectNames) {

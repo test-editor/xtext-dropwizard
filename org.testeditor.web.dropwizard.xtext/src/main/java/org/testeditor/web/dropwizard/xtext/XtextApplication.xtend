@@ -58,14 +58,17 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 			binder.bind(IndexSearchPathProvider).toInstance[#[]]
 			binder.bind(IContainer.Manager).to(ProjectDescriptionBasedContainerManager)
 			binder.bind(IResourceDescriptionsProvider).to(ChunkedResourceDescriptionsProvider)
+			// IWebResourceSetProvider is used by Xtext servlet requests to build resource sets (created and) used for a single request
+			// (see XtextServiceDispatcher line 204 [org.eclipse.xtext.web:2.13.0]) binder.bind(IWebResourceSetProvider).to(CustomWebResourceSetProvider)
 			binder.bind(IWebResourceSetProvider).to(CustomWebResourceSetProvider)
 			
 			// A binding from the actual configuration type to the proper instance is added by the GuiceBundle.
 			// However, classes that expect an XtextConfiguration object to be injected will not receive that
 			// instance, because Guice does not traverse the subtype hierarchy that way. Therefore, a binding
 			// for the base class is added here, unless the configuration class was not subtyped, in which case
-			// the binding provided by the GuiceBundle will cover this (and another binding would yield a conflict). 
-			if (this.configurationClass !== XtextConfiguration) {
+			// the binding provided by the GuiceBundle will cover this (and another binding would yield a conflict).
+			val bindConfigurationToSubtypedConfiguration = (this.configurationClass !== XtextConfiguration)
+			if (bindConfigurationToSubtypedConfiguration) {
 				binder.bind(XtextConfiguration).toProvider[config]
 			}
 
@@ -82,29 +85,29 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 		// see ExampleXtextApplicationIntegrationTest.serializingContentAssistEntryWorksEvenIfEObjectIsPresent and https://stackoverflow.com/a/38956032/1839228
 		environment.objectMapper.enable(MapperFeature.PROPAGATE_TRANSIENT_MARKER)
 
-		initializeXtextIndex(configuration, environment)
-		configureXtextServiceResource(configuration, environment)
-		configureWebhooks(configuration, environment)
-		configureValidationMarkerResource(configuration, environment)
+		initializeXtextIndex(environment)
+		configureXtextServiceResource(environment)
+		configureWebhooks(environment)
+		configureValidationMarkerResource(environment)
 	}
 
-	protected def void initializeXtextIndex(T configuration, Environment environment) {
-		gitService.init(configuration.localRepoFileRoot, configuration.remoteRepoUrl, configuration.privateKeyLocation,
-			configuration.knownHostsLocation)
-		validationMarkerUpdater.init(configuration.localRepoFileRoot)
+	protected def void initializeXtextIndex(Environment environment) {
+		gitService.init(config.localRepoFileRoot, config.remoteRepoUrl, config.privateKeyLocation,
+			config.knownHostsLocation)
+		validationMarkerUpdater.init(config.localRepoFileRoot)
 		buildManager.startBuild
 	}
 
-	protected def void configureXtextServiceResource(T configuration, Environment environment) {
+	protected def void configureXtextServiceResource(Environment environment) {
 		environment.servlets.sessionHandler = new SessionHandler
 		environment.jersey.register(XtextServiceResource)
 	}
 
-	protected def void configureWebhooks(T configuration, Environment environment) {
+	protected def void configureWebhooks(Environment environment) {
 		environment.jersey.register(BitbucketWebhookResource)
 	}
 
-	protected def void configureValidationMarkerResource(T configuration, Environment environment) {
+	protected def void configureValidationMarkerResource(Environment environment) {
 		environment.jersey.register(ValidationMarkerResource)
 	}
 
