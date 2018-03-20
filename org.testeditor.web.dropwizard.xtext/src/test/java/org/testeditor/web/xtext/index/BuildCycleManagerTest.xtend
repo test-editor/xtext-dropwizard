@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.*
 import static org.mockito.Mockito.mock
 import static org.mockito.Mockito.verify
 import static org.mockito.Mockito.when
+import org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils
 
 class BuildCycleManagerTest {
 
@@ -44,6 +45,7 @@ class BuildCycleManagerTest {
 	@Mock extension IResourceServiceProvider.Registry mockResourceServiceProviderRegistry
 	@Mock ChunkedResourceDescriptionsProvider indexProvider
 	@Mock ChunkedResourceDescriptions index
+	@Mock XtextBuilderUtils builderUtils
 
 	@InjectMocks BuildCycleManager buildCycleManagerUnderTest
 
@@ -143,7 +145,7 @@ class BuildCycleManagerTest {
 		val buildRequest = sampleBuildRequest
 		
 		// when
-		val actualIndexState = buildCycleManagerUnderTest.build(buildRequest)
+		val actualIndexState = buildCycleManagerUnderTest.build(buildRequest).indexState
 
 		// then
 		assertThat(actualIndexState.resourceDescriptions.exportedObjects.head.qualifiedName.toString).isEqualTo('Test')
