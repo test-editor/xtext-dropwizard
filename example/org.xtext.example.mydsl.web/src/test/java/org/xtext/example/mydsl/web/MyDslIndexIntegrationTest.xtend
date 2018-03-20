@@ -9,7 +9,7 @@ class MyDslIndexIntegrationTest extends AbstractMyDslApplicationIntegrationTest 
 
 	override protected initializeRemoteRepository(Git git, File parent) {
 		super.initializeRemoteRepository(git, parent)
-		writeToRemote('ChuckNorris.mydsl', 'Hello ChuckNorris!')
+		writeToRemote('src/test/java/ChuckNorris.mydsl', 'Hello ChuckNorris!')
 	}
 
 	@Test
@@ -18,7 +18,7 @@ class MyDslIndexIntegrationTest extends AbstractMyDslApplicationIntegrationTest 
 		val example = '''
 			Hello world from ChuckNorris!
 		'''
-		val validateRequest = createValidationRequest('Minimal.mydsl', example)
+		val validateRequest = createValidationRequest('src/test/java/Minimal.mydsl', example)
 
 		// when
 		val response = validateRequest.submit.get

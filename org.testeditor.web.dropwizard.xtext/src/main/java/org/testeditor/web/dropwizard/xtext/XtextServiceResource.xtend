@@ -28,7 +28,7 @@ import org.eclipse.xtext.web.server.XtextServiceDispatcher
 import org.eclipse.xtext.web.server.XtextServiceDispatcher.ServiceDescriptor
 import org.eclipse.xtext.web.servlet.XtextServlet
 import org.slf4j.LoggerFactory
-import org.testeditor.web.xtext.index.persistence.IndexUpdater
+import org.testeditor.web.xtext.index.LanguageAccessRegistry
 
 /**
  * Adapted from {@link XtextServlet}.
@@ -38,7 +38,7 @@ class XtextServiceResource {
 
 	static val logger = LoggerFactory.getLogger(XtextServiceResource)
 
-	@Inject IndexUpdater indexUpdater
+	@Inject LanguageAccessRegistry languages
 
 	@Context UriInfo ui
 	@Context HttpServletRequest request
@@ -126,7 +126,7 @@ class XtextServiceResource {
 		val contentType = serviceContext.getParameter('contentType')
 
 		val fileExtension = contentType ?: emfURI.fileExtension
-		val languageAccess = indexUpdater.languageAccessors.get(fileExtension)
+		val languageAccess = languages.getAccess(fileExtension)
 		if (languageAccess === null) {
 			if (!contentType.nullOrEmpty) {
 				throw new UnknownLanguageException('''Unable to identify the Xtext language for contentType «contentType».''')

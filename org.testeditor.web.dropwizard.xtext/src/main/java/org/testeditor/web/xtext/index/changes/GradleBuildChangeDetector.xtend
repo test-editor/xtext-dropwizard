@@ -2,6 +2,7 @@ package org.testeditor.web.xtext.index.changes
 
 import com.google.common.io.CharStreams
 import com.google.inject.Inject
+import com.google.inject.Provider
 import java.io.File
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
@@ -41,10 +42,10 @@ class GradleBuildChangeDetector implements ChangeDetector {
 
 	@Inject LanguageAccessRegistry languages
 
-	@Inject XtextConfiguration config
+	@Inject Provider<XtextConfiguration> config
 
 	var buildScriptPath = memoize[new File(projectRoot.get, BUILD_GRADLE_FILE_NAME).absolutePath]
-	var projectRoot = memoize[new File(config.localRepoFileRoot)]
+	var projectRoot = memoize[new File(config.get.localRepoFileRoot)]
 	var lastDetectedResources = <URI>emptySet
 
 	override detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {

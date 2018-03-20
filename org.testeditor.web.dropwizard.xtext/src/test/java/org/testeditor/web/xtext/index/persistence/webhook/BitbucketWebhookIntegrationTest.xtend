@@ -15,14 +15,14 @@ class BitbucketWebhookIntegrationTest extends AbstractExampleIntegrationTest {
 	String secondCommitId
 
 	override protected initializeRemoteRepository(Git git, File parent) {
-		firstCommitId = writeToRemote('Peter.mydsl', 'Hello Peter!').name()
-		secondCommitId = writeToRemote('Heinz.mydsl', 'Hello Heinz!').name()
+		firstCommitId = writeToRemote('src/main/java/Peter.mydsl', 'Hello Peter!').name()
+		secondCommitId = writeToRemote('src/main/java/Heinz.mydsl', 'Hello Heinz!').name()
 	}
 
 	@Test
 	def void webhookUpdatesLocalRepository() {
 		// given
-		val lastCommit = writeToRemote('unrelated.txt', 'random content').name()
+		val lastCommit = writeToRemote('src/main/java/unrelated.txt', 'random content').name()
 
 		// when
 		val response = createRequest.submit.get
@@ -39,7 +39,7 @@ class BitbucketWebhookIntegrationTest extends AbstractExampleIntegrationTest {
 		createFancyCommitHistory
 		val greeting = createFancyGreeting
 		val webhookRequest = createRequest
-		val validateRequest = createValidationRequest('Another.mydsl', greeting)
+		val validateRequest = createValidationRequest('src/main/java/Another.mydsl', greeting)
 
 		// when
 		val webhookResponse = webhookRequest.submit.get
@@ -57,9 +57,9 @@ class BitbucketWebhookIntegrationTest extends AbstractExampleIntegrationTest {
 	}
 
 	private def String createFancyCommitHistory() {
-		writeToRemote('Rudolf.mydsl', 'Hello Rudolf!') // add
-		writeToRemote('Peter.mydsl', 'Hello Peter2!') // modify
-		return deleteOnRemote('Heinz.mydsl').name() // delete
+		writeToRemote('src/main/java/Rudolf.mydsl', 'Hello Rudolf!') // add
+		writeToRemote('src/main/java/Peter.mydsl', 'Hello Peter2!') // modify
+		return deleteOnRemote('src/main/java/Heinz.mydsl').name() // delete
 	}
 
 	private def String createFancyGreeting() '''

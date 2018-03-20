@@ -1,5 +1,6 @@
 package org.testeditor.web.xtext.index
 
+import javax.inject.Provider
 import org.eclipse.emf.common.util.URI
 import org.eclipse.xtext.build.BuildRequest
 import org.eclipse.xtext.build.IncrementalBuilder
@@ -8,6 +9,7 @@ import org.eclipse.xtext.naming.QualifiedName
 import org.eclipse.xtext.resource.IResourceServiceProvider
 import org.eclipse.xtext.resource.XtextResourceSet
 import org.eclipse.xtext.resource.impl.ChunkedResourceDescriptions
+import org.eclipse.xtext.resource.impl.ProjectDescription
 import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
 import org.eclipse.xtext.resource.persistence.SerializableEObjectDescription
 import org.eclipse.xtext.xbase.lib.Functions.Function1
@@ -17,7 +19,6 @@ import org.mockito.ArgumentCaptor
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
-import org.mockito.Spy
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
 
@@ -29,10 +30,11 @@ import static org.mockito.Mockito.when
 
 class BuildCycleManagerTest {
 
-	@Spy var config = new XtextConfiguration => [
+	val config = new XtextConfiguration => [
 		localRepoFileRoot = '/base/dir'
 		indexSearchPaths = #['/search/path']
 	]
+	@Mock Provider<XtextConfiguration> configProvider
 	@Mock IndexSearchPathProvider mockSearchPathProvider
 	@Mock ChangeDetector mockChangeDetector
 	@Mock ChangedResources mockChangedResources
@@ -64,6 +66,7 @@ class BuildCycleManagerTest {
 			state = initialIndexState
 		]
 
+		when(configProvider.get).thenReturn(config)
 		when(mockSearchPathProvider.additionalSearchPaths(config.localRepoFileRoot)).thenReturn(#['/base/dir/some.jar'])
 		when(mockChangeDetector.detectChanges(eq(mockResourceSet), any, any)).thenReturn(mockChangedResources)
 		when(mockChangedResources.modifiedResources).thenReturn(expectedModifiedResources)
@@ -77,7 +80,10 @@ class BuildCycleManagerTest {
 			builderResult
 		]
 
-		when(indexProvider.getIndex(mockResourceSet)).thenReturn(index)
+		when(indexProvider.getResourceDescriptions).thenReturn(index)
+		when(indexProvider.getResourceDescriptions(any)).thenReturn(index)
+		when(indexProvider.indexResourceSet).thenReturn(mockResourceSet)
+		when(indexProvider.project).thenReturn(new ProjectDescription => [name = 'Unnamed Project'])
 	}
 
 	private def getMockedIndexState(Iterable<String> eObjectNames) {
@@ -109,9 +115,6 @@ class BuildCycleManagerTest {
 
 	@Test
 	def void createBuildRequestSetsRequiredFields() {
-		// given
-		buildCycleManagerUnderTest.init(URI.createFileURI(config.localRepoFileRoot))
-
 		// when
 		val actualBuildRequest = buildCycleManagerUnderTest.createBuildRequest
 
@@ -138,6 +141,7 @@ class BuildCycleManagerTest {
 	def void launchReturnsUpdatedIndexState() {
 		// given
 		val buildRequest = sampleBuildRequest
+		
 		// when
 		val actualIndexState = buildCycleManagerUnderTest.build(buildRequest)
 
@@ -149,6 +153,7 @@ class BuildCycleManagerTest {
 	def void launchInvokesValidationMarkerUpdaterState() {
 		// given
 		val buildRequest = sampleBuildRequest
+		
 		// when
 		buildCycleManagerUnderTest.build(buildRequest)
 
@@ -185,14 +190,12 @@ class BuildCycleManagerTest {
 		// given
 		val exportedObjectNames = #['modelElement', 'anotherElement']
 		val newIndexState = getMockedIndexState(exportedObjectNames)
-		val baseURI = URI.createFileURI(config.localRepoFileRoot)
-		buildCycleManagerUnderTest.init(baseURI)
-
+		
 		// when
 		buildCycleManagerUnderTest.updateIndex(newIndexState)
 
 		// then
-		verify(index).setContainer(baseURI.toString, newIndexState.resourceDescriptions)
+		verify(index).setContainer('Unnamed Project', newIndexState.resourceDescriptions)
 	}
 
 }
