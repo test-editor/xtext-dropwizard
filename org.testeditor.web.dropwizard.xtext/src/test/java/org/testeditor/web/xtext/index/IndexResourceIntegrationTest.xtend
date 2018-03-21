@@ -1,4 +1,4 @@
-package org.testeditor.web.xtext.index.persistence.webhook
+package org.testeditor.web.xtext.index
 
 import java.io.File
 import javax.ws.rs.client.Entity
@@ -9,7 +9,7 @@ import org.testeditor.web.dropwizard.xtext.integration.AbstractExampleIntegratio
 
 import static javax.ws.rs.core.Response.Status.*
 
-class BitbucketWebhookIntegrationTest extends AbstractExampleIntegrationTest {
+class IndexResourceIntegrationTest extends AbstractExampleIntegrationTest {
 
 	String firstCommitId
 	String secondCommitId
@@ -20,7 +20,7 @@ class BitbucketWebhookIntegrationTest extends AbstractExampleIntegrationTest {
 	}
 
 	@Test
-	def void webhookUpdatesLocalRepository() {
+	def void indexRefreshUpdatesLocalRepository() {
 		// given
 		val lastCommit = writeToRemote('src/main/java/unrelated.txt', 'random content').name()
 
@@ -34,26 +34,26 @@ class BitbucketWebhookIntegrationTest extends AbstractExampleIntegrationTest {
 	}
 
 	@Test
-	def void webhookUpdatesIndex() {
+	def void indexRefreshUpdatesIndex() {
 		// given
 		createFancyCommitHistory
 		val greeting = createFancyGreeting
-		val webhookRequest = createRequest
+		val indexRefreshRequest = createRequest
 		val validateRequest = createValidationRequest('src/main/java/Another.mydsl', greeting)
 
 		// when
-		val webhookResponse = webhookRequest.submit.get
+		val indexRefreshResponse = indexRefreshRequest.submit.get
 		val validationResponse = validateRequest.submit.get
 
 		// then
-		webhookResponse.status.assertEquals(NO_CONTENT.statusCode)
+		indexRefreshResponse.status.assertEquals(NO_CONTENT.statusCode)
 		validationResponse.status.assertEquals(OK.statusCode)
 		val expectedIssues = '''{"issues":[{"description":"Couldn't resolve reference to Greeting 'Heinz'.","severity":"error","line":3,"column":20,"offset":73,"length":5}]}'''
 		validationResponse.readEntity(String).assertEquals(expectedIssues)
 	}
 
 	private def Invocation createRequest() {
-		return createRequestWithApiToken('webhook/git', apiToken).buildPost(Entity.json('{}'))
+		return createRequest('index/refresh').buildPost(Entity.json('{}'))
 	}
 
 	private def String createFancyCommitHistory() {

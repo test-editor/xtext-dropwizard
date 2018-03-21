@@ -25,12 +25,12 @@ import org.testeditor.web.xtext.index.BuildCycleManager
 import org.testeditor.web.xtext.index.ChangeDetector
 import org.testeditor.web.xtext.index.ChunkedResourceDescriptionsProvider
 import org.testeditor.web.xtext.index.CustomWebResourceSetProvider
+import org.testeditor.web.xtext.index.IndexResource
 import org.testeditor.web.xtext.index.IndexSearchPathProvider
 import org.testeditor.web.xtext.index.XtextIndexModule
 import org.testeditor.web.xtext.index.changes.IndexFilterModule
 import org.testeditor.web.xtext.index.changes.TestEditorChangeDetector
 import org.testeditor.web.xtext.index.persistence.GitService
-import org.testeditor.web.xtext.index.persistence.webhook.BitbucketWebhookResource
 
 abstract class XtextApplication<T extends XtextConfiguration> extends DropwizardApplication<T> {
 
@@ -87,7 +87,7 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 
 		initializeXtextIndex(environment)
 		configureXtextServiceResource(environment)
-		configureWebhooks(environment)
+		configureIndexResource(environment)
 		configureValidationMarkerResource(environment)
 	}
 
@@ -103,8 +103,8 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 		environment.jersey.register(XtextServiceResource)
 	}
 
-	protected def void configureWebhooks(Environment environment) {
-		environment.jersey.register(BitbucketWebhookResource)
+	protected def void configureIndexResource(Environment environment) {
+		environment.jersey.register(IndexResource)
 	}
 
 	protected def void configureValidationMarkerResource(Environment environment) {
