@@ -96,27 +96,32 @@ class ChunkedResourceDescriptionsProvider implements IResourceDescriptionsProvid
 	public static val String PROJECT_NAME = 'projectName'
 
 	@Accessors(PUBLIC_GETTER)
-	@Inject
 	XtextResourceSet indexResourceSet
 
 	@Inject(optional=true)
 	@Named(PROJECT_NAME)
 	String projectName
 
+	@Inject
+	new(XtextResourceSet indexResourceSet) {
+		this.indexResourceSet = indexResourceSet
+	}
+
 	var Supplier<ProjectDescription> project = memoize[
 		new ProjectDescription => [
 			name = projectName ?: 'Unnamed Project'
-			attachToEmfObject(indexResourceSet)
 		]
 	]
 
 	def ProjectDescription getProject() {
+		indexResourceSet.registerWithProject
 		return project.get
 	}
 
 	def ChunkedResourceDescriptions getResourceDescriptions() {
 		var index = ChunkedResourceDescriptions.findInEmfObject(indexResourceSet)
 		if (index === null) {
+			indexResourceSet.registerWithProject
 			index = new ChunkedResourceDescriptions(emptyMap, indexResourceSet)
 		}
 		return index
