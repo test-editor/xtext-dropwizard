@@ -7,10 +7,11 @@ import javax.inject.Provider
 import org.apache.commons.io.FilenameUtils
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.xtext.index.LanguageAccessRegistry
+import org.eclipse.emf.common.util.URI
 
 interface IndexFilter {
 
-	def boolean isRelevantForIndex(String path)
+	def boolean isRelevantForIndex(URI uri)
 
 }
 
@@ -18,10 +19,10 @@ class LanguageExtensionBasedIndexFilter implements IndexFilter {
 
 	@Inject LanguageAccessRegistry languages
 
-	override boolean isRelevantForIndex(String filePath) {
-		return if (filePath !== null) {
+	override boolean isRelevantForIndex(URI fileURI) {
+		return if (fileURI !== null) {
 			val knownLanguageExtensions = languages.extensions
-			val fileExtension = FilenameUtils.getExtension(filePath)
+			val fileExtension = FilenameUtils.getExtension(fileURI.toString)
 			knownLanguageExtensions.exists[equalsIgnoreCase(fileExtension)]
 		} else {
 			false
@@ -36,8 +37,8 @@ class SearchPathBasedIndexFilter implements IndexFilter {
 
 	var Iterable<Path> searchPaths = null
 
-	override boolean isRelevantForIndex(String path) {
-		val absolutePath = new File(path).toPath.toAbsolutePath
+	override boolean isRelevantForIndex(URI resourceURI) {
+		val absolutePath = new File(resourceURI.path).toPath.toAbsolutePath
 		return getSearchPaths.exists[absolutePath.startsWith(it)]
 	}
 
@@ -55,8 +56,18 @@ class LogicalAndBasedIndexFilter implements IndexFilter {
 
 	@Inject Iterable<IndexFilter> conditions
 
-	override boolean isRelevantForIndex(String path) {
+	override boolean isRelevantForIndex(URI path) {
 		return conditions.forall[it.isRelevantForIndex(path)]
 	}
 
+}
+
+class LogicalOrBasedIndexFilter implements IndexFilter {
+	
+	@Inject Iterable<IndexFilter> conditions
+	
+	override isRelevantForIndex(URI path) {
+		return conditions.exists[it.isRelevantForIndex(path)]
+	}
+	
 }
