@@ -1,5 +1,6 @@
 package org.testeditor.web.dropwizard.xtext.validation
 
+import com.google.inject.Provider
 import org.eclipse.emf.common.util.URI
 import org.eclipse.xtext.builder.standalone.IIssueHandler.DefaultIssueHandler
 import org.eclipse.xtext.diagnostics.Severity
@@ -15,11 +16,13 @@ import org.mockito.Captor
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.MockitoAnnotations
+import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 
 import static java.util.Collections.nCopies
 import static org.assertj.core.api.Assertions.assertThat
 import static org.eclipse.xtext.diagnostics.Severity.*
 import static org.mockito.Mockito.verify
+import static org.mockito.Mockito.when
 
 @RunWith(Parameterized)
 class ValidationMarkerUpdaterTest {
@@ -81,6 +84,7 @@ class ValidationMarkerUpdaterTest {
 
 	@Mock DefaultIssueHandler defaultHandler
 	@Mock ValidationMarkerMap markerMap
+	@Mock Provider<XtextConfiguration> configProvider
 	@InjectMocks ValidationMarkerUpdater markerUpdaterUnderTest
 	
 	@Captor ArgumentCaptor<Iterable<ValidationSummary>> actualSummaries
@@ -89,7 +93,10 @@ class ValidationMarkerUpdaterTest {
 	@Test
 	def void returnsMarkerSummary() {
 		// given
-		markerUpdaterUnderTest.init(rootPath)
+		val config = new XtextConfiguration => [
+			localRepoFileRoot = rootPath
+		]
+		when(configProvider.get).thenReturn(config)
 
 		// when
 		markerUpdaterUnderTest.handleIssue(givenIssues)

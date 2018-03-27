@@ -36,7 +36,6 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 
 	@Inject XtextIndexModule indexModule
 	@Inject GitService gitService
-	@Inject ValidationMarkerUpdater validationMarkerUpdater
 	@Inject BuildCycleManager buildManager
 	
 	var T config
@@ -92,9 +91,7 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 	}
 
 	protected def void initializeXtextIndex(Environment environment) {
-		gitService.init(config.localRepoFileRoot, config.remoteRepoUrl, config.privateKeyLocation,
-			config.knownHostsLocation)
-		validationMarkerUpdater.init(config.localRepoFileRoot)
+		gitService.init(config.localRepoFileRoot, config.remoteRepoUrl, config.privateKeyLocation, config.knownHostsLocation)
 		buildManager.startBuild
 	}
 
