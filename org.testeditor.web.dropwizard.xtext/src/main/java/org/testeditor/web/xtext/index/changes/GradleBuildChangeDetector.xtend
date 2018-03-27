@@ -14,11 +14,11 @@ import javax.inject.Singleton
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.ResourceSet
 import org.eclipse.xtext.common.types.access.impl.IndexedJvmTypeAccess
-import org.eclipse.xtext.resource.XtextResourceSet
 import org.slf4j.LoggerFactory
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.xtext.index.ChangeDetector
 import org.testeditor.web.xtext.index.ChangedResources
+import org.testeditor.web.xtext.index.ChunkedResourceDescriptionsProvider
 import org.testeditor.web.xtext.index.LanguageAccessRegistry
 import org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils
 
@@ -39,11 +39,11 @@ class GradleBuildChangeDetector implements ChangeDetector {
 
 	public static val String SUCCESSOR_NAME = 'GradleBuildChangeDetectorSuccessor'
 
-	@Inject
-	extension XtextBuilderUtils builderUtils
-
+	@Inject extension XtextBuilderUtils builderUtils
+	
+	@Inject ChunkedResourceDescriptionsProvider resourceDescriptionsProvider
+	@Inject IndexedJvmTypeAccess jvmTypeAccess
 	@Inject LanguageAccessRegistry languages
-
 	@Inject Provider<XtextConfiguration> config
 
 	var buildScriptPath = memoize[new File(projectRoot.get, BUILD_GRADLE_FILE_NAME).absolutePath]
@@ -63,9 +63,11 @@ class GradleBuildChangeDetector implements ChangeDetector {
 				modifiedResources += detectedResources
 				deletedResources += lastDetectedResources.difference(detectedResources.toSet)
 				classPath += jarFiles
+				resourceDescriptionsProvider.indexResourceSet.installTypeProvider(classPath, jvmTypeAccess)
 			]
 			lastDetectedResources = detectedResources
 		}
+		
 		return accumulatedChanges
 	}
 

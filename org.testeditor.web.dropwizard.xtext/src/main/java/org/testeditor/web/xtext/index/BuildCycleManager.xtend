@@ -23,7 +23,6 @@ import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
 import org.eclipse.xtext.validation.CheckMode
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
-import org.testeditor.web.xtext.index.changes.CompileJavaBuildStep
 
 import static com.google.common.base.Suppliers.memoize
 
@@ -37,7 +36,6 @@ class BuildCycleManager {
 	@Inject ChunkedResourceDescriptionsProvider resourceDescriptionsProvider
 	@Inject extension IndexSearchPathProvider searchPathProvider
 	@Inject extension IResourceServiceProvider.Registry resourceServiceProviderFactory
-	@Inject CompileJavaBuildStep stubCompiler
 
 	var Supplier<URI> baseURI = memoize[URI.createFileURI(config.get.localRepoFileRoot)]
 
@@ -51,20 +49,21 @@ class BuildCycleManager {
 
 		val buildRequest = createBuildRequest.addChanges
 
-		buildRequest.build => [
-			indexState.updateIndex
-		]
-
 		if (initialBuild) {
-			buildRequest => [
-				build => [
-					indexState.updateIndex
-					affectedResources.filter[getNew !== null].map[uri].forEach[validate]
-					affectedResources.filter[getNew === null].map[uri].forEach[removeValidationMarkers]
-					updateValidationMarkers
-				]
+			buildRequest.build => [
+				indexState.updateIndex
+				buildRequest.state = indexState
 			]
 		}
+
+		buildRequest => [
+			build => [
+				indexState.updateIndex
+				affectedResources.filter[getNew !== null].map[uri].forEach[validate]
+				affectedResources.filter[getNew === null].map[uri].forEach[removeValidationMarkers]
+				updateValidationMarkers
+			]
+		]
 	}
 
 	def void validate(URI resourceURI) {
@@ -81,8 +80,12 @@ class BuildCycleManager {
 	}
 
 	def BuildRequest addChanges(BuildRequest request) {
+		val baseDir = new File(config.get.localRepoFileRoot)
+		val initialChanges = new ChangedResources => [
+			classPath += config.get.indexClassPath.map[new File(baseDir, it).absolutePath]
+		]
 		return request => [
-			val changes = changeDetector.detectChanges(resourceDescriptionsProvider.indexResourceSet, searchPaths, new ChangedResources)
+			val changes = changeDetector.detectChanges(resourceDescriptionsProvider.indexResourceSet, searchPaths, initialChanges)
 			dirtyFiles += changes.modifiedResources
 			deletedFiles += changes.deletedResources
 			currentChanges = changes
@@ -116,10 +119,7 @@ class BuildCycleManager {
 		val index = resourceDescriptionsProvider.resourceDescriptions
 
 		index.setContainer(projectName, indexState.resourceDescriptions)
-	}
-
-	def void installJvmTypes() {
-		stubCompiler.detectChanges(resourceDescriptionsProvider.indexResourceSet, searchPaths, currentChanges)
+		lastIndexState = indexState
 	}
 
 	private def getStaticSearchPaths() {
