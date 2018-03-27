@@ -20,11 +20,17 @@ import org.testeditor.web.xtext.index.ChunkedResourceDescriptionsProvider
 import org.testeditor.web.xtext.index.LanguageAccessRegistry
 import org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils
 
+/**
+ * Compiles Java sources on the index search path, adds the resulting class
+ * files to the class path, and installs a type provider based on a class loader
+ * with that class path. 
+ * 
+ * Based on code extracted from 
+ * {@link org.eclipse.xtext.builder.standalone.StandaloneBuilder StandaloneBuilder}.
+ */
 @Singleton
-class JavaStubCompiler implements ChangeDetector {
+class CompileJavaBuildStep implements ChangeDetector {
 
-	@Inject LanguageAccessRegistry languages
-	@Inject AbstractFileSystemAccess commonFileAccess
 	@Inject IJavaCompiler compiler
 	@Inject ChunkedResourceDescriptionsProvider resourceDescriptionsProvider
 	@Inject IndexedJvmTypeAccess jvmTypeAccess
@@ -32,44 +38,24 @@ class JavaStubCompiler implements ChangeDetector {
 	
 	File tempDir = Files.createTempDir
 	
-	static val logger = LoggerFactory.getLogger(JavaStubCompiler)
+	static val logger = LoggerFactory.getLogger(CompileJavaBuildStep)
 	
 	
 	override detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
 		return accumulatedChanges => [
-			classPath += modifiedResources.generateStubs(resourceDescriptionsProvider.data).compileStubs(classPath, paths)
+			classPath += compile(classPath, paths)
 			resourceDescriptionsProvider.indexResourceSet.installTypeProvider(classPath, jvmTypeAccess)
 		]
 	}
-
-
-	private def generateStubs(Iterable<URI> sourceResourceURIs, ResourceDescriptionsData data) {
-		val stubsDir = createTempDir("stubs")
-		logger.info("Generating stubs into " + stubsDir.absolutePath)
-		commonFileAccess.setOutputPath(IFileSystemAccess.DEFAULT_OUTPUT, stubsDir.absolutePath)
-		val generateStubs = sourceResourceURIs.filter[languages.getAccess(fileExtension).linksAgainstJava]
-		generateStubs.forEach [
-			languages.getAccess(fileExtension).stubGenerator.doGenerateStubs(commonFileAccess, data.getResourceDescription(it))
-		]
-		return stubsDir
-	}
 	
-	private def compileStubs(File stubsDir, Iterable<String> classPathEntries, Iterable<String> sourceDirs) {
-		val stubsClasses = createTempDir("classes")
+	private def compile(Iterable<String> classPathEntries, Iterable<String> sourceDirs) {
+		val buildDir = createTempDir("classes")
 		compiler.setClassPath(classPathEntries)
-		logger.info("Compiling stubs located in " + stubsDir.absolutePath)
-		val sourcesToCompile = uniqueEntries(sourceDirs + newArrayList(stubsDir.absolutePath))
+		val sourcesToCompile = uniqueEntries(sourceDirs)
 		logger.info("Compiler source roots: " + sourcesToCompile.join(','))
-		val result = compiler.compile(sourcesToCompile, stubsClasses)
-		switch (result) {
-			case CompilationResult.SKIPPED:
-				logger.info("Nothing to compile. Stubs compilation was skipped.")
-			case CompilationResult.FAILED:
-				logger.info("Stubs compilation finished with errors.")
-			case CompilationResult.SUCCEEDED:
-				logger.info("Stubs compilation successfully finished.")
-		}
-		return stubsClasses.absolutePath
+		compiler.compile(sourcesToCompile, buildDir).logCompilerResult
+
+		return buildDir.absolutePath
 	}
 
 	private def createTempDir(String subDir) {
@@ -81,4 +67,16 @@ class JavaStubCompiler implements ChangeDetector {
 	private def uniqueEntries(Iterable<String> paths) {
 		return paths.map[new File(it).absolutePath].toSet
 	}
+	
+	private def logCompilerResult(CompilationResult result) {
+		switch (result) {
+		case CompilationResult.SKIPPED:
+			logger.info("Nothing to compile. Compilation was skipped.")
+		case CompilationResult.FAILED:
+			logger.info("Compilation finished with errors.")
+		case CompilationResult.SUCCEEDED:
+			logger.info("Compilation successfully finished.")
+		}
+	}
+	
 }
