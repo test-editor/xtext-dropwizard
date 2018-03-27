@@ -3,6 +3,7 @@ package org.testeditor.web.xtext.index.changes
 import com.google.inject.Provider
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.ResourceSet
+import org.eclipse.xtext.common.types.access.impl.IndexedJvmTypeAccess
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -13,6 +14,7 @@ import org.mockito.junit.MockitoJUnit
 import org.mockito.junit.MockitoRule
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.xtext.index.ChangedResources
+import org.testeditor.web.xtext.index.ChunkedResourceDescriptionsProvider
 import org.testeditor.web.xtext.index.LanguageAccessRegistry
 import org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils
 
@@ -33,6 +35,8 @@ class GradleBuildChangeDetectorTest {
 	@Mock XtextConfiguration config
 	@Mock XtextBuilderUtils builderUtils
 	@Mock LanguageAccessRegistry languages
+	@Mock ChunkedResourceDescriptionsProvider resourceDescriptionsProvider
+	@Mock IndexedJvmTypeAccess jvmTypeAccess
 	@InjectMocks GradleBuildChangeDetector gradleChangeDetectorUnderTest
 
 	static val sampleJarPath1 = '/path/to/gradle/cache/some.jar'
