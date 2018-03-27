@@ -23,6 +23,7 @@ import static org.eclipse.jgit.diff.DiffEntry.ChangeType.*
 
 import static extension org.eclipse.emf.common.util.URI.createFileURI
 import static extension org.mockito.Mockito.*
+import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
 
 class TestEditorChangeDetectorTest extends AbstractTestWithExampleLanguage {
 
@@ -36,6 +37,7 @@ class TestEditorChangeDetectorTest extends AbstractTestWithExampleLanguage {
 	@Mock XtextConfiguration config
 	@Mock ResourceSet mockResourceSet
 	@Mock LanguageAccessRegistry mockLanguages
+	@Mock IJavaCompiler mockCompiler
 
 	override protected collectModules(List<Module> modules) {
 		super.collectModules(modules)
@@ -44,6 +46,7 @@ class TestEditorChangeDetectorTest extends AbstractTestWithExampleLanguage {
 			binder.bind(GitService).toInstance(mockGit)
 			binder.bind(XtextConfiguration).toInstance(config)
 			binder.bind(LanguageAccessRegistry).toInstance(mockLanguages)
+			binder.bind(IJavaCompiler).toInstance(mockCompiler)
 		]
 	}
 

@@ -23,8 +23,7 @@ import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
 import org.eclipse.xtext.validation.CheckMode
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
-import org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils
-import org.testeditor.web.xtext.index.changes.JavaStubCompiler
+import org.testeditor.web.xtext.index.changes.CompileJavaBuildStep
 
 import static com.google.common.base.Suppliers.memoize
 
@@ -36,10 +35,9 @@ class BuildCycleManager {
 	@Inject ValidationMarkerUpdater validationUpdater
 	@Inject IncrementalBuilder builder
 	@Inject ChunkedResourceDescriptionsProvider resourceDescriptionsProvider
-	@Inject extension XtextBuilderUtils
 	@Inject extension IndexSearchPathProvider searchPathProvider
 	@Inject extension IResourceServiceProvider.Registry resourceServiceProviderFactory
-	@Inject JavaStubCompiler stubCompiler
+	@Inject CompileJavaBuildStep stubCompiler
 
 	var Supplier<URI> baseURI = memoize[URI.createFileURI(config.get.localRepoFileRoot)]
 
@@ -55,14 +53,12 @@ class BuildCycleManager {
 
 		buildRequest.build => [
 			indexState.updateIndex
-			installJvmTypes
 		]
 
 		if (initialBuild) {
 			buildRequest => [
 				build => [
 					indexState.updateIndex
-					installJvmTypes
 					affectedResources.filter[getNew !== null].map[uri].forEach[validate]
 					affectedResources.filter[getNew === null].map[uri].forEach[removeValidationMarkers]
 					updateValidationMarkers
