@@ -11,6 +11,7 @@ import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.plugin.EcorePlugin
 import org.eclipse.emf.ecore.resource.ResourceSet
 import org.eclipse.xtext.common.types.access.impl.ClasspathTypeProvider
+import org.eclipse.xtext.common.types.access.impl.IndexedJvmTypeAccess
 import org.eclipse.xtext.mwe.NameBasedFilter
 import org.eclipse.xtext.mwe.PathTraverser
 import org.eclipse.xtext.resource.XtextResourceSet
@@ -91,8 +92,12 @@ class XtextBuilderUtils {
 	 * copied and adapted from org.eclipse.xtext.builder.standalone.StandaloneBuilder
 	 */
 	def void installTypeProvider(XtextResourceSet resourceSet, Iterable<String> classPathRoots) {
+		installTypeProvider(resourceSet, classPathRoots, null)
+	}
+
+	def void installTypeProvider(XtextResourceSet resourceSet, Iterable<String> classPathRoots, IndexedJvmTypeAccess typeAccess) {
 		val classLoader = createURLClassLoader(classPathRoots)
-		new ClasspathTypeProvider(classLoader, resourceSet, null, null)
+		new ClasspathTypeProvider(classLoader, resourceSet, typeAccess, null)
 		resourceSet.setClasspathURIContext(classLoader)
 	}
 
