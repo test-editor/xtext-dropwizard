@@ -1,6 +1,7 @@
 package org.testeditor.web.xtext.index.changes
 
 import com.google.inject.Module
+import com.google.inject.name.Names
 import java.io.File
 import java.util.List
 import javax.inject.Inject
@@ -9,6 +10,7 @@ import org.eclipse.emf.ecore.resource.ResourceSet
 import org.eclipse.jgit.diff.DiffEntry
 import org.eclipse.jgit.diff.DiffEntry.ChangeType
 import org.eclipse.jgit.lib.ObjectId
+import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mock
@@ -23,7 +25,6 @@ import static org.eclipse.jgit.diff.DiffEntry.ChangeType.*
 
 import static extension org.eclipse.emf.common.util.URI.createFileURI
 import static extension org.mockito.Mockito.*
-import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
 
 class TestEditorChangeDetectorTest extends AbstractTestWithExampleLanguage {
 
@@ -42,7 +43,7 @@ class TestEditorChangeDetectorTest extends AbstractTestWithExampleLanguage {
 	override protected collectModules(List<Module> modules) {
 		super.collectModules(modules)
 		modules += [ binder |
-			binder.install(new IndexFilterModule)
+			binder.bind(IndexFilter).annotatedWith(Names.named(ChangeFilter.FILTER_CHANGES_FOR_INDEX)).to(LanguageExtensionBasedIndexFilter)
 			binder.bind(GitService).toInstance(mockGit)
 			binder.bind(XtextConfiguration).toInstance(config)
 			binder.bind(LanguageAccessRegistry).toInstance(mockLanguages)

@@ -3,6 +3,7 @@ package org.testeditor.web.dropwizard.xtext
 import com.fasterxml.jackson.databind.MapperFeature
 import com.google.inject.Module
 import com.google.inject.TypeLiteral
+import com.google.inject.name.Names
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import java.util.List
@@ -32,7 +33,9 @@ import org.testeditor.web.xtext.index.CustomWebResourceSetProvider
 import org.testeditor.web.xtext.index.IndexResource
 import org.testeditor.web.xtext.index.IndexSearchPathProvider
 import org.testeditor.web.xtext.index.XtextIndexModule
-import org.testeditor.web.xtext.index.changes.IndexFilterModule
+import org.testeditor.web.xtext.index.changes.ChangeFilter
+import org.testeditor.web.xtext.index.changes.IndexFilter
+import org.testeditor.web.xtext.index.changes.LanguageExtensionBasedIndexFilter
 import org.testeditor.web.xtext.index.changes.TestEditorChangeDetector
 import org.testeditor.web.xtext.index.persistence.GitService
 
@@ -52,7 +55,7 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 	override protected collectModules(List<Module> modules) {
 		super.collectModules(modules)
 		modules += [ binder |
-			binder.install(new IndexFilterModule)
+			binder.bind(IndexFilter).annotatedWith(Names.named(ChangeFilter.FILTER_CHANGES_FOR_INDEX)).to(LanguageExtensionBasedIndexFilter)
 			binder.bind(ChangeDetector).to(TestEditorChangeDetector)
 			binder.bind(IIssueHandler).to(ValidationMarkerUpdater)
 			binder.bind(ResponseBuilder).toProvider[Response.ok]
