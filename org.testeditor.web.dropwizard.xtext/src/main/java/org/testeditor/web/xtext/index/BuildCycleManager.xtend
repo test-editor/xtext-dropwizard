@@ -12,12 +12,15 @@ import org.eclipse.emf.ecore.resource.ResourceSet
 import org.eclipse.xtend.lib.annotations.Accessors
 import org.eclipse.xtext.build.BuildRequest
 import org.eclipse.xtext.build.IncrementalBuilder
+import org.eclipse.xtext.build.IncrementalBuilder.Result
 import org.eclipse.xtext.build.IndexState
 import org.eclipse.xtext.resource.IResourceDescriptionsProvider
 import org.eclipse.xtext.resource.IResourceServiceProvider
 import org.eclipse.xtext.resource.XtextResourceSet
 import org.eclipse.xtext.resource.impl.ChunkedResourceDescriptions
 import org.eclipse.xtext.resource.impl.ProjectDescription
+import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
+import org.eclipse.xtext.validation.CheckMode
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
 
@@ -39,20 +42,57 @@ class BuildCycleManager {
 	var IndexState lastIndexState = new IndexState
 	var String[] staticSearchPaths = null
 
-	def void startBuild() {
-		createBuildRequest.addChanges.build.updateIndex
-		updateValidationMarkers
-	}
+	var ChangedResources currentChanges
 
-	def BuildRequest addChanges(BuildRequest request) {
-		return request => [
-			val changes = changeDetector.detectChanges(resourceDescriptionsProvider.indexResourceSet, searchPaths, new ChangedResources)
-			dirtyFiles += changes.modifiedResources
-			deletedFiles += changes.deletedResources
+	def void startBuild() {
+		val initialBuild = resourceDescriptionsProvider.resourceDescriptionsData === null
+
+		val buildRequest = createBuildRequest.addChanges
+
+		if (initialBuild) {
+			buildRequest.build => [
+				indexState.updateIndex
+				buildRequest.state = indexState
+			]
+		}
+
+		buildRequest => [
+			build => [
+				indexState.updateIndex
+				affectedResources.filter[getNew !== null].map[uri].forEach[validate]
+				affectedResources.filter[getNew === null].map[uri].forEach[removeValidationMarkers]
+				updateValidationMarkers
+			]
 		]
 	}
 
-	def String[] getSearchPaths(BuildRequest request) {
+	def void validate(URI resourceURI) {
+		val resourceValidator = getResourceServiceProvider(resourceURI).getResourceValidator
+		if (resourceValidator !== null) {
+			val resourceSet = resourceDescriptionsProvider.indexResourceSet
+			val validationResult = resourceValidator.validate(resourceSet.getResource(resourceURI, true), CheckMode.ALL, null)
+			validationUpdater.afterValidate(resourceURI, validationResult)
+		}
+	}
+
+	def void removeValidationMarkers(URI resourceURI) {
+		validationUpdater.afterValidate(resourceURI, emptyList)
+	}
+
+	def BuildRequest addChanges(BuildRequest request) {
+		val baseDir = new File(config.get.localRepoFileRoot)
+		val initialChanges = new ChangedResources => [
+			classPath += config.get.indexClassPath.map[new File(baseDir, it).absolutePath]
+		]
+		return request => [
+			val changes = changeDetector.detectChanges(resourceDescriptionsProvider.indexResourceSet, searchPaths, initialChanges)
+			dirtyFiles += changes.modifiedResources
+			deletedFiles += changes.deletedResources
+			currentChanges = changes
+		]
+	}
+
+	def String[] getSearchPaths() {
 		return getStaticSearchPaths + config.get.localRepoFileRoot.additionalSearchPaths
 	}
 
@@ -62,11 +102,12 @@ class BuildCycleManager {
 			afterValidate = validationUpdater
 			resourceSet = resourceDescriptionsProvider.indexResourceSet
 			state = lastIndexState
+			indexOnly = true
 		]
 	}
 
-	def IndexState build(BuildRequest request) {
-		return builder.build(request, [getResourceServiceProvider]).indexState
+	def Result build(BuildRequest request) {
+		return builder.build(request, [getResourceServiceProvider])
 	}
 
 	def void updateValidationMarkers() {
@@ -78,6 +119,7 @@ class BuildCycleManager {
 		val index = resourceDescriptionsProvider.resourceDescriptions
 
 		index.setContainer(projectName, indexState.resourceDescriptions)
+		lastIndexState = indexState
 	}
 
 	private def getStaticSearchPaths() {
@@ -118,6 +160,10 @@ class ChunkedResourceDescriptionsProvider implements IResourceDescriptionsProvid
 		return project.get
 	}
 
+	def ResourceDescriptionsData getResourceDescriptionsData() {
+		return resourceDescriptions.getContainer(getProject.name)
+	}
+
 	def ChunkedResourceDescriptions getResourceDescriptions() {
 		var index = ChunkedResourceDescriptions.findInEmfObject(indexResourceSet)
 		if (index === null) {
@@ -129,7 +175,7 @@ class ChunkedResourceDescriptionsProvider implements IResourceDescriptionsProvid
 
 	/**
 	 * Get the resource descriptions (i.e. the content of the index) maintained by
-	 * {@link org.testeditor.web.xtext.index.BuildCycleManager BuildCycleManager}.
+	 * {@link BuildCycleManager BuildCycleManager}.
 	 * 
 	 * This class uses a fixed resource set which is associated with its index.
 	 * If a different resource set is passed in, a shallow copy of the index is
@@ -168,13 +214,11 @@ interface ChangeDetector {
 
 }
 
+@Accessors(PUBLIC_GETTER)
 class ChangedResources {
 
-	val modifiedResources = <URI>newHashSet
-	val deletedResources = <URI>newHashSet
-
-	def Set<URI> getModifiedResources() { return modifiedResources }
-
-	def Set<URI> getDeletedResources() { return deletedResources }
+	val Set<URI> modifiedResources = newHashSet
+	val Set<URI> deletedResources = newHashSet
+	val Set<String> classPath = newHashSet
 
 }

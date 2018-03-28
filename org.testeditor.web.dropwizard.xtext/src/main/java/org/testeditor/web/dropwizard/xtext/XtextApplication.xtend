@@ -3,6 +3,7 @@ package org.testeditor.web.dropwizard.xtext
 import com.fasterxml.jackson.databind.MapperFeature
 import com.google.inject.Module
 import com.google.inject.TypeLiteral
+import com.google.inject.name.Names
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
 import java.util.List
@@ -13,7 +14,11 @@ import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.xtext.ISetup
 import org.eclipse.xtext.XtextRuntimeModule
 import org.eclipse.xtext.builder.standalone.IIssueHandler
+import org.eclipse.xtext.builder.standalone.compiler.EclipseJavaCompiler
+import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
 import org.eclipse.xtext.common.TerminalsStandaloneSetup
+import org.eclipse.xtext.generator.AbstractFileSystemAccess
+import org.eclipse.xtext.generator.JavaIoFileSystemAccess
 import org.eclipse.xtext.resource.IContainer
 import org.eclipse.xtext.resource.IResourceDescriptionsProvider
 import org.eclipse.xtext.resource.containers.ProjectDescriptionBasedContainerManager
@@ -28,7 +33,9 @@ import org.testeditor.web.xtext.index.CustomWebResourceSetProvider
 import org.testeditor.web.xtext.index.IndexResource
 import org.testeditor.web.xtext.index.IndexSearchPathProvider
 import org.testeditor.web.xtext.index.XtextIndexModule
-import org.testeditor.web.xtext.index.changes.IndexFilterModule
+import org.testeditor.web.xtext.index.changes.ChangeFilter
+import org.testeditor.web.xtext.index.changes.IndexFilter
+import org.testeditor.web.xtext.index.changes.LanguageExtensionBasedIndexFilter
 import org.testeditor.web.xtext.index.changes.TestEditorChangeDetector
 import org.testeditor.web.xtext.index.persistence.GitService
 
@@ -37,7 +44,7 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 	@Inject XtextIndexModule indexModule
 	@Inject GitService gitService
 	@Inject BuildCycleManager buildManager
-	
+
 	var T config
 
 	override protected initializeInjection(Bootstrap<T> bootstrap) {
@@ -48,19 +55,20 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 	override protected collectModules(List<Module> modules) {
 		super.collectModules(modules)
 		modules += [ binder |
-			binder.install(new IndexFilterModule)
-
+			binder.bind(IndexFilter).annotatedWith(Names.named(ChangeFilter.FILTER_CHANGES_FOR_INDEX)).to(LanguageExtensionBasedIndexFilter)
 			binder.bind(ChangeDetector).to(TestEditorChangeDetector)
 			binder.bind(IIssueHandler).to(ValidationMarkerUpdater)
 			binder.bind(ResponseBuilder).toProvider[Response.ok]
 			binder.bind(new TypeLiteral<Iterable<ISetup>>() {}).toProvider[getLanguageSetups(indexModule)]
 			binder.bind(IndexSearchPathProvider).toInstance[#[]]
 			binder.bind(IContainer.Manager).to(ProjectDescriptionBasedContainerManager)
+			binder.bind(AbstractFileSystemAccess).to(JavaIoFileSystemAccess)
+			binder.bind(IJavaCompiler).to(EclipseJavaCompiler)
 			binder.bind(IResourceDescriptionsProvider).to(ChunkedResourceDescriptionsProvider)
 			// IWebResourceSetProvider is used by Xtext servlet requests to build resource sets (created and) used for a single request
 			// (see XtextServiceDispatcher line 204 [org.eclipse.xtext.web:2.13.0]) binder.bind(IWebResourceSetProvider).to(CustomWebResourceSetProvider)
 			binder.bind(IWebResourceSetProvider).to(CustomWebResourceSetProvider)
-			
+
 			// A binding from the actual configuration type to the proper instance is added by the GuiceBundle.
 			// However, classes that expect an XtextConfiguration object to be injected will not receive that
 			// instance, because Guice does not traverse the subtype hierarchy that way. Therefore, a binding

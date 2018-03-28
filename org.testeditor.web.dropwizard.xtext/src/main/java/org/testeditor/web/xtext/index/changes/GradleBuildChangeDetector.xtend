@@ -13,10 +13,12 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.ResourceSet
+import org.eclipse.xtext.common.types.access.impl.IndexedJvmTypeAccess
 import org.slf4j.LoggerFactory
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.xtext.index.ChangeDetector
 import org.testeditor.web.xtext.index.ChangedResources
+import org.testeditor.web.xtext.index.ChunkedResourceDescriptionsProvider
 import org.testeditor.web.xtext.index.LanguageAccessRegistry
 import org.testeditor.web.xtext.index.buildutils.XtextBuilderUtils
 
@@ -37,11 +39,11 @@ class GradleBuildChangeDetector implements ChangeDetector {
 
 	public static val String SUCCESSOR_NAME = 'GradleBuildChangeDetectorSuccessor'
 
-	@Inject
-	extension XtextBuilderUtils builderUtils
-
+	@Inject extension XtextBuilderUtils builderUtils
+	
+	@Inject ChunkedResourceDescriptionsProvider resourceDescriptionsProvider
+	@Inject IndexedJvmTypeAccess jvmTypeAccess
 	@Inject LanguageAccessRegistry languages
-
 	@Inject Provider<XtextConfiguration> config
 
 	var buildScriptPath = memoize[new File(projectRoot.get, BUILD_GRADLE_FILE_NAME).absolutePath]
@@ -52,16 +54,20 @@ class GradleBuildChangeDetector implements ChangeDetector {
 		if (accumulatedChanges.modifiedResources.exists[buildScriptPath.get.equals(path)]) {
 			runGradleAssemble(projectRoot.get)
 			prepareGradleTask(projectRoot.get)
-			val detectedResources = collectClasspathJarsViaGradle(projectRoot.get).collectResources(resourceSet, languages.extensions)
+			val jarFiles = collectClasspathJarsViaGradle(projectRoot.get)
+			val detectedResources = jarFiles.collectResources(resourceSet, languages.extensions)
 			accumulatedChanges => [
 				// conservatively assume that all resources found have also been modified.
 				// There may be room for optimization here, e.g. checking whether underlying 
 				// jars have actually been modified (last modified meta-data of file)
 				modifiedResources += detectedResources
 				deletedResources += lastDetectedResources.difference(detectedResources.toSet)
+				classPath += jarFiles
+				resourceDescriptionsProvider.indexResourceSet.installTypeProvider(classPath, jvmTypeAccess)
 			]
 			lastDetectedResources = detectedResources
 		}
+		
 		return accumulatedChanges
 	}
 
