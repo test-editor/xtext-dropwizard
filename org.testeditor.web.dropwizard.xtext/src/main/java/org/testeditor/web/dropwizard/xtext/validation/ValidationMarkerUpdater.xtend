@@ -1,5 +1,7 @@
 package org.testeditor.web.dropwizard.xtext.validation
 
+import com.google.common.base.Supplier
+import com.google.inject.Provider
 import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -14,6 +16,9 @@ import org.eclipse.xtext.builder.standalone.IIssueHandler
 import org.eclipse.xtext.builder.standalone.StandaloneBuilder
 import org.eclipse.xtext.validation.Issue
 import org.slf4j.LoggerFactory
+import org.testeditor.web.dropwizard.xtext.XtextConfiguration
+
+import static com.google.common.base.Suppliers.memoize
 
 /**
  * Collects and summarizes validation issues on a per-resource-basis.
@@ -44,16 +49,13 @@ class ValidationMarkerUpdater implements IIssueHandler, IPostValidationCallback 
 
 	@Inject DefaultIssueHandler delegateForDefaultBehavior
 	@Inject extension ValidationMarkerMap validationMarkerMap
+	@Inject Provider<XtextConfiguration> config
 
 	static val logger = LoggerFactory.getLogger(ValidationMarkerUpdater)
 
 	val collectedValidationSummaries = new HashMap<String, ValidationSummary>()
-	var Path rootDirectory
+	var Supplier<Path> rootDirectory = memoize[new File(config.get.localRepoFileRoot).absoluteFile.toPath]
 	var Resource currentResource
-
-	def void init(String rootDirectory) {
-		this.rootDirectory = new File(rootDirectory).absoluteFile.toPath
-	}
 
 	def void setContext(Resource resource) {
 		currentResource = resource
@@ -86,6 +88,7 @@ class ValidationMarkerUpdater implements IIssueHandler, IPostValidationCallback 
 	}
 
 	private def incrementFor(ValidationSummary summary, Issue issue) {
+		logger.info('''Adding validation marker for issue: "«issue»"''')
 		return summary => [
 			switch (issue.severity) {
 				case ERROR:
@@ -102,9 +105,9 @@ class ValidationMarkerUpdater implements IIssueHandler, IPostValidationCallback 
 
 	private def toResourcePath(URI uri) {
 		if (uri !== null) {
-			return rootDirectory.relativize(Paths.get(uri.path)).toString
+			return rootDirectory.get.relativize(Paths.get(uri.path)).toString
 		} else if (currentResource !== null) {
-			return rootDirectory.relativize(Paths.get(currentResource.URI.path)).toString
+			return rootDirectory.get.relativize(Paths.get(currentResource.URI.path)).toString
 		} else {
 			return null
 		}

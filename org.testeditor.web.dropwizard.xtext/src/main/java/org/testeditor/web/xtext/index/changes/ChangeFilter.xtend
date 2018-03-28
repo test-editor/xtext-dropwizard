@@ -19,8 +19,8 @@ class ChangeFilter implements ChangeDetector {
 	@Inject @Named(FILTER_CHANGES_FOR_INDEX) extension IndexFilter filter
 
 	override detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
-		accumulatedChanges.modifiedResources.removeIf[!path.isRelevantForIndex]
-		accumulatedChanges.deletedResources.removeIf[!path.isRelevantForIndex]
+		accumulatedChanges.modifiedResources.removeIf[!isRelevantForIndex]
+		accumulatedChanges.deletedResources.removeIf[!isRelevantForIndex]
 		return accumulatedChanges
 	}
 
