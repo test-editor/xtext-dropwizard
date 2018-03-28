@@ -5,6 +5,7 @@ import com.google.inject.Module
 import com.google.inject.TypeLiteral
 import com.google.inject.name.Names
 import java.io.File
+import java.net.URLClassLoader
 import java.util.List
 import javax.inject.Inject
 import org.eclipse.emf.common.util.URI
@@ -119,7 +120,7 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 		''')
 		new File(root, 'gradlew').executable = true
 		addAndCommit(remoteGit, 'gradlew', 'Add dummy gradlew')
-		write(root, 'src/test/java/Demo.mydsl', 'Hello Peter! Resolve java.lang.String')
+		write(root, 'src/test/java/Demo.mydsl', 'Hello Peter!')
 		addAndCommit(remoteGit, 'src/test/java/Demo.mydsl', 'Add MyDsl.xtext as an example')
 
 		gitService.init(config.localRepoFileRoot, config.remoteRepoUrl)
@@ -189,19 +190,21 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 	}
 
 	@Test
-	def void buildSetsClasspathURIContext() {
-		// given
+	def void buildSetsCorrectClasspathURIContext() {
 		// when
 		buildManagerUnderTest.startBuild
 
 		// then
-		assertThat(indexProvider.indexResourceSet.classpathURIContext).isNotNull
-
+		val classLoader = indexProvider.indexResourceSet.classpathURIContext as URLClassLoader
+		assertThat(classLoader.URLs.map[path]).containsOnly(#[
+				'''«tmpDir.root.absolutePath»/«localRoot»/mydsl.jar''',
+				'''«tmpDir.root.absolutePath»/«localRoot»/build/classes/java/main'''])
 	}
 	
 	@Test
 	def void startBuildUpdatesValidationMarkers() {
 		// given
+		val expectedValidationSummaries = #[]
 		val actualValidationSummaries = ArgumentCaptor.forClass(Iterable)
 		
 		// when
@@ -209,7 +212,7 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 
 		// then
 		verify(validationMarkers).updateMarkers(actualValidationSummaries.capture)
-		assertThat(actualValidationSummaries.value).isNotEmpty
+		assertThat(actualValidationSummaries.value).isEqualTo(expectedValidationSummaries)
 	}
 	
 	@Test

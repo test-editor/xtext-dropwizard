@@ -45,7 +45,7 @@ class BuildCycleManager {
 	var ChangedResources currentChanges
 
 	def void startBuild() {
-		val initialBuild = resourceDescriptionsProvider.data === null
+		val initialBuild = resourceDescriptionsProvider.resourceDescriptionsData === null
 
 		val buildRequest = createBuildRequest.addChanges
 
@@ -67,10 +67,10 @@ class BuildCycleManager {
 	}
 
 	def void validate(URI resourceURI) {
-		val resourceValidator = getResourceServiceProvider(resourceURI).getResourceValidator();
+		val resourceValidator = getResourceServiceProvider(resourceURI).getResourceValidator
 		if (resourceValidator !== null) {
 			val resourceSet = resourceDescriptionsProvider.indexResourceSet
-			val validationResult = resourceValidator.validate(resourceSet.getResource(resourceURI, true), CheckMode.ALL, null);
+			val validationResult = resourceValidator.validate(resourceSet.getResource(resourceURI, true), CheckMode.ALL, null)
 			validationUpdater.afterValidate(resourceURI, validationResult)
 		}
 	}
@@ -160,7 +160,7 @@ class ChunkedResourceDescriptionsProvider implements IResourceDescriptionsProvid
 		return project.get
 	}
 
-	def ResourceDescriptionsData getData() {
+	def ResourceDescriptionsData getResourceDescriptionsData() {
 		return resourceDescriptions.getContainer(getProject.name)
 	}
 
@@ -217,8 +217,8 @@ interface ChangeDetector {
 @Accessors(PUBLIC_GETTER)
 class ChangedResources {
 
-	val Set<URI> modifiedResources = <URI>newHashSet
-	val Set<URI> deletedResources = <URI>newHashSet
-	val Set<String> classPath = <String>newHashSet
+	val Set<URI> modifiedResources = newHashSet
+	val Set<URI> deletedResources = newHashSet
+	val Set<String> classPath = newHashSet
 
 }
