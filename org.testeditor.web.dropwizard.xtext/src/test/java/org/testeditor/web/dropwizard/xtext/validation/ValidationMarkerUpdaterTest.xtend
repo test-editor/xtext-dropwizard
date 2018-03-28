@@ -2,7 +2,6 @@ package org.testeditor.web.dropwizard.xtext.validation
 
 import com.google.inject.Provider
 import org.eclipse.emf.common.util.URI
-import org.eclipse.xtext.builder.standalone.IIssueHandler.DefaultIssueHandler
 import org.eclipse.xtext.diagnostics.Severity
 import org.eclipse.xtext.validation.Issue
 import org.eclipse.xtext.validation.Issue.IssueImpl
@@ -37,42 +36,38 @@ class ValidationMarkerUpdaterTest {
 	@Parameters(name = '{0}')
 	static def Iterable<Object[]> testVectors() {
 		return #[
-			#['should handle empty issue list with default behavior', #[], #[]],
+			#['should handle empty issue list with empty validation summary to remove issues', 
+				sampleURI, #[], #[new ValidationSummary(samplePath, 0, 0, 0)]
+			],
 			#['should add up error issues for single resource', 
-				nCopies(10, issueFor(sampleURI, ERROR)), #[new ValidationSummary(samplePath, 10, 0, 0)]
+				sampleURI, nCopies(10, issueFor(sampleURI, ERROR)), #[new ValidationSummary(samplePath, 10, 0, 0)]
 			],
 			#['should add up warning issues for single resource', 
-				nCopies(10, issueFor(sampleURI, WARNING)), #[new ValidationSummary(samplePath, 0, 10, 0)]
+				sampleURI, nCopies(10, issueFor(sampleURI, WARNING)), #[new ValidationSummary(samplePath, 0, 10, 0)]
 			],
 			#['should add up info issues for single resource', 
-				nCopies(10, issueFor(sampleURI, INFO)), #[new ValidationSummary(samplePath, 0, 0, 10)]
+				sampleURI, nCopies(10, issueFor(sampleURI, INFO)), #[new ValidationSummary(samplePath, 0, 0, 10)]
 			],
 			#['should not consider ignore issues for single resource', 
-				nCopies(10, issueFor(sampleURI, IGNORE)), #[new ValidationSummary(samplePath, 0, 0, 0)]
+				sampleURI, nCopies(10, issueFor(sampleURI, IGNORE)), #[new ValidationSummary(samplePath, 0, 0, 0)]
 			],
 			#['should add up issues by type for single resource', 
-				#[issueFor(sampleURI, ERROR),
+				sampleURI, #[issueFor(sampleURI, ERROR),
 				issueFor(sampleURI, WARNING),
 				issueFor(sampleURI, ERROR),
 				issueFor(sampleURI, INFO),
 				issueFor(sampleURI, IGNORE)],
 				#[new ValidationSummary(samplePath, 2, 1, 1)]
-			],
-			#['should add up issues by type, individually for each resource',
-				#[issueFor(sampleURI, ERROR),
-				issueFor(anotherURI, WARNING),
-				issueFor(sampleURIWithFragment, INFO),
-				issueFor(anotherURI, IGNORE),
-				issueFor(anotherURI, WARNING)],
-				#[new ValidationSummary(samplePath, 1, 0, 1), new ValidationSummary(anotherPath, 0, 2, 0)]
 			]
 		]
 	}
 
 	var Iterable<Issue> givenIssues
+	var URI resourceURI
 	var ValidationSummary[] expectedSummaries
 
-	new(String testName, Iterable<Issue> givenIssues, Iterable<ValidationSummary> expectedSummaries) {
+	new(String testName, URI resourceURI, Iterable<Issue> givenIssues, Iterable<ValidationSummary> expectedSummaries) {
+		this.resourceURI = resourceURI
 		this.givenIssues = givenIssues
 		this.expectedSummaries = expectedSummaries
 	}
@@ -82,13 +77,11 @@ class ValidationMarkerUpdaterTest {
 		MockitoAnnotations.initMocks(this);
 	}
 
-	@Mock DefaultIssueHandler defaultHandler
 	@Mock ValidationMarkerMap markerMap
 	@Mock Provider<XtextConfiguration> configProvider
 	@InjectMocks ValidationMarkerUpdater markerUpdaterUnderTest
 	
 	@Captor ArgumentCaptor<Iterable<ValidationSummary>> actualSummaries
-	@Captor ArgumentCaptor<Iterable<Issue>> actualIssues
 
 	@Test
 	def void returnsMarkerSummary() {
@@ -99,15 +92,12 @@ class ValidationMarkerUpdaterTest {
 		when(configProvider.get).thenReturn(config)
 
 		// when
-		markerUpdaterUnderTest.handleIssue(givenIssues)
+		markerUpdaterUnderTest.afterValidate(resourceURI, givenIssues)
 		markerUpdaterUnderTest.updateMarkerMap
 
 		// then
 		verify(markerMap).updateMarkers(actualSummaries.capture())
 		assertThat(actualSummaries.value).containsExactlyInAnyOrder(expectedSummaries)
-
-		verify(defaultHandler).handleIssue(actualIssues.capture())
-		assertThat(actualIssues.value).isSameAs(givenIssues)
 	}
 
 	private static def Issue issueFor(URI uri, Severity type) {

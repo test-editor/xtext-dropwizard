@@ -45,9 +45,8 @@ import static com.google.common.base.Suppliers.memoize
  * itself. 
  */
 @Singleton
-class ValidationMarkerUpdater implements IIssueHandler, IPostValidationCallback {
+class ValidationMarkerUpdater implements IPostValidationCallback {
 
-	@Inject DefaultIssueHandler delegateForDefaultBehavior
 	@Inject extension ValidationMarkerMap validationMarkerMap
 	@Inject Provider<XtextConfiguration> config
 
@@ -62,20 +61,9 @@ class ValidationMarkerUpdater implements IIssueHandler, IPostValidationCallback 
 	}
 
 	override afterValidate(URI resourceURI, Iterable<Issue> issues) {
-		issues.forEach[previouslyCollectedSummary(resourceURI.toResourcePath).incrementFor(it)]
+		val validationSummaryForResource = previouslyCollectedSummary(resourceURI.toResourcePath)
+		issues.forEach[validationSummaryForResource.incrementFor(it)]
 		return true
-	}
-
-	override boolean handleIssue(Iterable<Issue> issues) {
-		issues?.forEach [
-			val path = uriToProblem.toResourcePath
-			if (path !== null) {
-				previouslyCollectedSummary(path).incrementFor(it)
-			} else {
-				logger.warn('''Could not determine resource path for issue: «it»''')
-			}
-		]
-		return delegateForDefaultBehavior.handleIssue(issues)
 	}
 
 	def void updateMarkerMap() {

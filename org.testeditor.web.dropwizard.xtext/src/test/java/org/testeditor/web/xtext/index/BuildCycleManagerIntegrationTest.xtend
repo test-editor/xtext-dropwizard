@@ -48,6 +48,7 @@ import org.xtext.example.mydsl.ide.MyDslIdeModule
 import static com.google.common.base.Suppliers.memoize
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.*
+import org.testeditor.web.dropwizard.xtext.validation.ValidationSummary
 
 class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 
@@ -204,7 +205,6 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 	@Test
 	def void startBuildUpdatesValidationMarkers() {
 		// given
-		val expectedValidationSummaries = #[]
 		val actualValidationSummaries = ArgumentCaptor.forClass(Iterable)
 		
 		// when
@@ -212,7 +212,7 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 
 		// then
 		verify(validationMarkers).updateMarkers(actualValidationSummaries.capture)
-		assertThat(actualValidationSummaries.value).isEqualTo(expectedValidationSummaries)
+		assertThat(actualValidationSummaries.value).containsOnly(ValidationSummary.noMarkers('src/test/java/Demo.mydsl'))
 	}
 	
 	@Test
