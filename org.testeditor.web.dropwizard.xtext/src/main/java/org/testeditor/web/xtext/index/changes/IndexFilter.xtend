@@ -56,8 +56,8 @@ class LogicalAndBasedIndexFilter implements IndexFilter {
 
 	@Inject Iterable<IndexFilter> conditions
 
-	override boolean isRelevantForIndex(URI path) {
-		return conditions.forall[it.isRelevantForIndex(path)]
+	override boolean isRelevantForIndex(URI uri) {
+		return conditions.forall[it.isRelevantForIndex(uri)]
 	}
 
 }
@@ -66,8 +66,8 @@ class LogicalOrBasedIndexFilter implements IndexFilter {
 	
 	@Inject Iterable<IndexFilter> conditions
 	
-	override isRelevantForIndex(URI path) {
-		return conditions.exists[it.isRelevantForIndex(path)]
+	override isRelevantForIndex(URI uri) {
+		return conditions.exists[it.isRelevantForIndex(uri)]
 	}
 	
 }
