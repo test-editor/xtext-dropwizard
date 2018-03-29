@@ -40,6 +40,27 @@ class ValidationMarkerMapTest {
 	}
 
 	@Test
+	def void removesValidationMarkersAfterUpdateWithNullSummary() {
+		// given
+		val unitUnderTest = new ValidationMarkerMap
+		val initialSummaries = #[
+			new ValidationSummary('path', 1, 2, 3),
+			new ValidationSummary('another/path', 42, 23, 3)
+		]
+		val summariesAfterFix = #[
+			new ValidationSummary('path', 0, 0, 0)
+		]
+		unitUnderTest.updateMarkers(initialSummaries)
+		assertThat(unitUnderTest.allMarkers).containsExactlyInAnyOrder(initialSummaries)
+		
+		// when
+		unitUnderTest.updateMarkers(summariesAfterFix)
+
+		// then
+		assertThat(unitUnderTest.allMarkers).containsExactlyInAnyOrder(#[new ValidationSummary('another/path', 42, 23, 3)])
+	}
+
+	@Test
 	def void returnsNoMarkersDefaultWhenPathIsNotFound() {
 		// given
 		val unitUnderTest = new ValidationMarkerMap

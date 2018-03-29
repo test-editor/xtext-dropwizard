@@ -24,7 +24,13 @@ class ValidationMarkerMap {
 	def void updateMarkers(Iterable<ValidationSummary> summaries) {
 		if (!summaries.empty) {
 			val currentUpdate = futureUpdate
-			summaries.forEach[summary|validationMarkers.put(summary.path, summary)]
+			summaries.forEach [ summary |
+				if (summary.hasNoIssues) {
+					validationMarkers.remove(summary.path)
+				} else {
+					validationMarkers.put(summary.path, summary)
+				}
+			]
 			futureUpdate = new CompletableFuture<Iterable<ValidationSummary>>()
 			currentUpdate.complete(allMarkers)
 			val now = System.currentTimeMillis
@@ -56,6 +62,10 @@ class ValidationMarkerMap {
 
 	private def newMarkersAvailableSince(long lastAccessed) {
 		return lastAccessed <= lastUpdated.get
+	}
+
+	private def hasNoIssues(ValidationSummary summary) {
+		return summary.errors === 0 && summary.warnings === 0 && summary.infos === 0
 	}
 
 }

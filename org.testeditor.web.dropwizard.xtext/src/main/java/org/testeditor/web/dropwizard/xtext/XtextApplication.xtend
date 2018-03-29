@@ -13,7 +13,6 @@ import javax.ws.rs.core.Response.ResponseBuilder
 import org.eclipse.jetty.server.session.SessionHandler
 import org.eclipse.xtext.ISetup
 import org.eclipse.xtext.XtextRuntimeModule
-import org.eclipse.xtext.builder.standalone.IIssueHandler
 import org.eclipse.xtext.builder.standalone.compiler.EclipseJavaCompiler
 import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
 import org.eclipse.xtext.common.TerminalsStandaloneSetup
@@ -25,7 +24,6 @@ import org.eclipse.xtext.resource.containers.ProjectDescriptionBasedContainerMan
 import org.eclipse.xtext.web.server.model.IWebResourceSetProvider
 import org.testeditor.web.dropwizard.DropwizardApplication
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerResource
-import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
 import org.testeditor.web.xtext.index.BuildCycleManager
 import org.testeditor.web.xtext.index.ChangeDetector
 import org.testeditor.web.xtext.index.ChunkedResourceDescriptionsProvider
@@ -57,7 +55,6 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 		modules += [ binder |
 			binder.bind(IndexFilter).annotatedWith(Names.named(ChangeFilter.FILTER_CHANGES_FOR_INDEX)).to(LanguageExtensionBasedIndexFilter)
 			binder.bind(ChangeDetector).to(TestEditorChangeDetector)
-			binder.bind(IIssueHandler).to(ValidationMarkerUpdater)
 			binder.bind(ResponseBuilder).toProvider[Response.ok]
 			binder.bind(new TypeLiteral<Iterable<ISetup>>() {}).toProvider[getLanguageSetups(indexModule)]
 			binder.bind(IndexSearchPathProvider).toInstance[#[]]
