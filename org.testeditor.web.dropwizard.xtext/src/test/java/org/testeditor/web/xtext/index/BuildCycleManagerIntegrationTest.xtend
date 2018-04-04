@@ -5,8 +5,13 @@ import com.google.inject.Module
 import com.google.inject.TypeLiteral
 import com.google.inject.name.Names
 import java.io.File
+import java.io.FileOutputStream
 import java.net.URLClassLoader
+import java.nio.file.FileSystems
+import java.nio.file.Files
 import java.util.List
+import java.util.jar.JarEntry
+import java.util.jar.JarOutputStream
 import javax.inject.Inject
 import org.eclipse.emf.common.util.URI
 import org.eclipse.jgit.api.Git
@@ -21,8 +26,10 @@ import org.eclipse.xtext.builder.standalone.compiler.IJavaCompiler
 import org.eclipse.xtext.generator.AbstractFileSystemAccess
 import org.eclipse.xtext.generator.JavaIoFileSystemAccess
 import org.eclipse.xtext.naming.QualifiedName
+import org.eclipse.xtext.resource.IContainer
 import org.eclipse.xtext.resource.XtextResourceSet
 import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
+import org.eclipse.xtext.resource.impl.SimpleResourceDescriptionsBasedContainerManager
 import org.eclipse.xtext.resource.persistence.SerializableEObjectDescription
 import org.eclipse.xtext.util.Modules2
 import org.eclipse.xtext.web.server.DefaultWebModule
@@ -36,6 +43,7 @@ import org.testeditor.web.dropwizard.testing.git.JGitTestUtils
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerMap
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
+import org.testeditor.web.dropwizard.xtext.validation.ValidationSummary
 import org.testeditor.web.xtext.index.changes.ChangeFilter
 import org.testeditor.web.xtext.index.changes.IndexFilter
 import org.testeditor.web.xtext.index.changes.LanguageExtensionBasedIndexFilter
@@ -48,7 +56,6 @@ import org.xtext.example.mydsl.ide.MyDslIdeModule
 import static com.google.common.base.Suppliers.memoize
 import static org.assertj.core.api.Assertions.assertThat
 import static org.mockito.Mockito.*
-import org.testeditor.web.dropwizard.xtext.validation.ValidationSummary
 
 class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 
@@ -109,8 +116,20 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 	def void initializeRemoteRepository() {
 		val root = new File(tmpDir.root, remoteRoot)
 		remoteGit = Git.init.setDirectory(root).call
-		write(root, 'build.gradle', '''apply plugin: 'java' ''')
-		addAndCommit(remoteGit, 'build.gradle', 'Add build.gradle')
+		write(root, 'build.gradle', '''
+			apply plugin: 'java' 
+			
+			repositories {
+			   flatDir {
+			       dirs 'libs'
+			   }
+			}
+			
+			dependencies {
+			   compile name: 'mydsl'
+			}
+			''')
+		remoteGit.addAndCommit('build.gradle', 'Add build.gradle')
 		write(root, 'gradlew', '''
 			#!/bin/bash
 			echo "running dummy gradle ..."
@@ -121,9 +140,13 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 			fi
 		''')
 		new File(root, 'gradlew').executable = true
-		addAndCommit(remoteGit, 'gradlew', 'Add dummy gradlew')
+		remoteGit.addAndCommit('gradlew', 'Add dummy gradlew')
 		write(root, 'src/test/java/Demo.mydsl', 'Hello Peter!')
-		addAndCommit(remoteGit, 'src/test/java/Demo.mydsl', 'Add MyDsl.xtext as an example')
+		remoteGit.addAndCommit('src/test/java/Demo.mydsl', 'Add MyDsl.xtext as an example')
+		
+		new File(root, 'libs').mkdir
+		writeJarFile(root, 'libs/mydsl.jar')
+		remoteGit.addAndCommit('libs/mydsl.jar', 'Add sample jar file')
 
 		gitService.init(config.localRepoFileRoot, config.remoteRepoUrl)
 	}
@@ -199,8 +222,9 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 		// then
 		val classLoader = indexProvider.indexResourceSet.classpathURIContext as URLClassLoader
 		assertThat(classLoader.URLs.map[path]).containsOnly(#[
-				'''«tmpDir.root.absolutePath»/«localRoot»/mydsl.jar''',
-				'''«tmpDir.root.absolutePath»/«localRoot»/build/classes/java/main'''])
+			'''«tmpDir.root.absolutePath»/«localRoot»/mydsl.jar''', /* jars collected by Gradle */
+			'''«tmpDir.root.absolutePath»/«localRoot»/build/classes/java/main''', /* path(s) provided via Dropwizard config */
+			'''«tmpDir.root.absolutePath»/«localRoot»/build'''] /* Gradle default output of 'assemble' task */)
 	}
 	
 	@Test
@@ -234,24 +258,45 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 		val root = new File(tmpDir.root, remoteRoot)
 		val javaFilePath = 'src/main/java/SampleClass.java'
 		write(root, javaFilePath, 'public class SampleClass {}')
-		addAndCommit(remoteGit, javaFilePath, 'Add sample Java file')
+		remoteGit.addAndCommit(javaFilePath, 'Add sample Java file')
 		
 		val gradleWrapperFile = new File(root, 'gradlew')
 		gradleWrapperFile.delete
 		new ProcessBuilder('gradle', 'wrapper').directory(root).start.waitFor
 		remoteGit.add.addFilepattern('gradle').call
-		addAndCommit(remoteGit, 'gradlew', 'replace dummy with real gradle wrapper')
+		remoteGit.addAndCommit('gradlew', 'replace dummy with real gradle wrapper')
 		
 		buildManagerUnderTest.startBuild
 		
 		// when
 		write(root, javaFilePath, 'public class SampleClass implements Cloneable {}')
-		addAndCommit(remoteGit, javaFilePath, 'Modify Java file')
+		remoteGit.addAndCommit(javaFilePath, 'Modify Java file')
 		buildManagerUnderTest.startBuild
 
 		// then
 		val classLoader = indexProvider.indexResourceSet.classpathURIContext as URLClassLoader
 		assertThat(classLoader.loadClass('SampleClass').interfaces).contains(Cloneable)
+	}
+	
+	private def writeJarFile(File root, String jarName) {
+		val jarFilename = root.absolutePath + '/' + jarName
+
+		new JarOutputStream(new FileOutputStream(jarFilename)) => [
+			add('peter.mydsl', '''Hello Peter'''.toString.bytes)
+			add('test.xtend', '''class Test { }'''.toString.bytes)
+			add('jxtest.java', '''class jxtest { }'''.toString.bytes)
+			add('jtest.class', Files.readAllBytes(FileSystems.getDefault.getPath('src/test/resources/jtest.class')))
+			close
+		]
+		
+		return jarFilename
+	}
+ 
+ 	private def void add(JarOutputStream jarOutputStream, String fileName, byte[] content) {
+		val jarEntry = new JarEntry(fileName)
+		jarOutputStream.putNextEntry(jarEntry)
+		jarOutputStream.write(content)
+		jarOutputStream.closeEntry
 	}
 
 	private def getMockedIndexState(Iterable<String> eObjectNames) {

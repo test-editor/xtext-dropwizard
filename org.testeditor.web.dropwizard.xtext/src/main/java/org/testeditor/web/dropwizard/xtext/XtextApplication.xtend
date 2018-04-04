@@ -58,7 +58,6 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 			binder.bind(ResponseBuilder).toProvider[Response.ok]
 			binder.bind(new TypeLiteral<Iterable<ISetup>>() {}).toProvider[getLanguageSetups(indexModule)]
 			binder.bind(IndexSearchPathProvider).toInstance[#[]]
-			binder.bind(IContainer.Manager).to(ProjectDescriptionBasedContainerManager)
 			binder.bind(AbstractFileSystemAccess).to(JavaIoFileSystemAccess)
 			binder.bind(IJavaCompiler).to(EclipseJavaCompiler)
 			binder.bind(IResourceDescriptionsProvider).to(ChunkedResourceDescriptionsProvider)
