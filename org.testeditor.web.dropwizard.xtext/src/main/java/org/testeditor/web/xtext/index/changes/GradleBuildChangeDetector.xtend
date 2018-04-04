@@ -99,6 +99,7 @@ class GradleBuildChangeDetector implements ChangeDetector {
 		if (!hasPrintTestClasspathTask) {
 			logger.info('Adding standard gradle job to print test classpath.')
 			Files.write(Paths.get(repoRoot.absolutePath).resolve('build.gradle'), '''
+
 				task printTestClasspath {
 					doLast {
 						configurations.testRuntime.each { println it }

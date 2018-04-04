@@ -72,6 +72,7 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 	val XtextConfiguration config = new XtextConfiguration
 
 	var BuildRequest sampleBuildRequest
+	Git remoteGit
 
 	override protected collectModules(List<Module> modules) {
 		super.collectModules(modules)
@@ -107,7 +108,7 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 	@Before
 	def void initializeRemoteRepository() {
 		val root = new File(tmpDir.root, remoteRoot)
-		val remoteGit = Git.init.setDirectory(root).call
+		remoteGit = Git.init.setDirectory(root).call
 		write(root, 'build.gradle', '''apply plugin: 'java' ''')
 		addAndCommit(remoteGit, 'build.gradle', 'Add build.gradle')
 		write(root, 'gradlew', '''
@@ -225,6 +226,32 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 		val index = indexProvider.getResourceDescriptions(indexProvider.indexResourceSet)
 		assertThat(index.exportedObjects.map[qualifiedName.toString]).containsOnly('Peter')
 
+	}
+	
+	@Test
+	def void startBuildRecompilesModifiedJavaFiles() {
+		// given
+		val root = new File(tmpDir.root, remoteRoot)
+		val javaFilePath = 'src/main/java/SampleClass.java'
+		write(root, javaFilePath, 'public class SampleClass {}')
+		addAndCommit(remoteGit, javaFilePath, 'Add sample Java file')
+		
+		val gradleWrapperFile = new File(root, 'gradlew')
+		gradleWrapperFile.delete
+		new ProcessBuilder('gradle', 'wrapper').directory(root).start.waitFor
+		remoteGit.add.addFilepattern('gradle').call
+		addAndCommit(remoteGit, 'gradlew', 'replace dummy with real gradle wrapper')
+		
+		buildManagerUnderTest.startBuild
+		
+		// when
+		write(root, javaFilePath, 'public class SampleClass implements Cloneable {}')
+		addAndCommit(remoteGit, javaFilePath, 'Modify Java file')
+		buildManagerUnderTest.startBuild
+
+		// then
+		val classLoader = indexProvider.indexResourceSet.classpathURIContext as URLClassLoader
+		assertThat(classLoader.loadClass('SampleClass').interfaces).contains(Cloneable)
 	}
 
 	private def getMockedIndexState(Iterable<String> eObjectNames) {
