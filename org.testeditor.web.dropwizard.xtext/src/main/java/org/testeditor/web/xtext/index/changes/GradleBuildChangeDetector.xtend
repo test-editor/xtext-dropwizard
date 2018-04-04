@@ -34,13 +34,14 @@ import static extension com.google.common.collect.Sets.difference
 class GradleBuildChangeDetector implements ChangeDetector {
 
 	static val BUILD_GRADLE_FILE_NAME = 'build.gradle'
+	static val GRADLE_ASSEMBLE_OUT_DIR = 'build'
 	static val GRADLE_PROCESS_TIMEOUT_MINUTES = 10
 	static val logger = LoggerFactory.getLogger(GradleBuildChangeDetector)
 
 	public static val String SUCCESSOR_NAME = 'GradleBuildChangeDetectorSuccessor'
 
 	@Inject extension XtextBuilderUtils builderUtils
-	
+
 	@Inject ChunkedResourceDescriptionsProvider resourceDescriptionsProvider
 	@Inject IndexedJvmTypeAccess jvmTypeAccess
 	@Inject LanguageAccessRegistry languages
@@ -51,7 +52,7 @@ class GradleBuildChangeDetector implements ChangeDetector {
 	var lastDetectedResources = <URI>emptySet
 
 	override detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
-		if (accumulatedChanges.modifiedResources.exists[buildScriptPath.get.equals(path)]) {
+		if (accumulatedChanges.containsRelevantChanges(paths)) {
 			runGradleAssemble(projectRoot.get)
 			prepareGradleTask(projectRoot.get)
 			val jarFiles = collectClasspathJarsViaGradle(projectRoot.get)
@@ -63,12 +64,28 @@ class GradleBuildChangeDetector implements ChangeDetector {
 				modifiedResources += detectedResources
 				deletedResources += lastDetectedResources.difference(detectedResources.toSet)
 				classPath += jarFiles
+				classPath += new File(projectRoot.get, GRADLE_ASSEMBLE_OUT_DIR).absolutePath
 				resourceDescriptionsProvider.indexResourceSet.installTypeProvider(classPath, jvmTypeAccess)
 			]
 			lastDetectedResources = detectedResources
 		}
-		
+
 		return accumulatedChanges
+	}
+
+	private def containsRelevantChanges(ChangedResources accumulatedChanges, String[] searchPath) {
+		return accumulatedChanges.modifiedResources.map[path].exists [
+			buildScriptModified || javaFileModified(searchPath)
+		]
+	}
+
+	private def buildScriptModified(String path) {
+		return buildScriptPath.get.equals(path)
+	}
+
+	private def javaFileModified(String path, String[] searchPath) {
+		return path.endsWith('.java') && searchPath.exists[path.startsWith(it)]
+
 	}
 
 	/** make sure the task 'printTestClasspath' exists */

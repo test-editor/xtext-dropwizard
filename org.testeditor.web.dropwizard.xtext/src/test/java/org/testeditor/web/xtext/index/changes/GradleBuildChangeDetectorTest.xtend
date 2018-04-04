@@ -1,6 +1,8 @@
 package org.testeditor.web.xtext.index.changes
 
 import com.google.inject.Provider
+import java.io.File
+import org.apache.commons.io.FileUtils
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.ResourceSet
 import org.eclipse.xtext.common.types.access.impl.IndexedJvmTypeAccess
@@ -43,7 +45,6 @@ class GradleBuildChangeDetectorTest {
 	static val sampleJarPath2 = '/path/to/gradle/cache/some.other.jar'
 
 	static val relevantFileInJar = URI.createURI('archive:' + URI.createFileURI(sampleJarPath1) + '!/relevant/file.in.jar.mydsl')
-	static val irrelevantFileInJar = URI.createURI('archive:' + URI.createFileURI(sampleJarPath1) + '!/irrelevant/file.in.jar.txt')
 
 	@Before
 	def void setupMocks() {
@@ -56,7 +57,7 @@ class GradleBuildChangeDetectorTest {
 	@Test
 	def void doesNothingIfBuildScriptIsUnmodified() {
 		// given
-		val unrelatedFileURI = URI.createFileURI('not.build.gradle') 
+		val unrelatedFileURI = URI.createFileURI('not.build.gradle')
 		val previouslyDetectedChanges = new ChangedResources => [
 			modifiedResources += unrelatedFileURI
 		]
@@ -97,6 +98,60 @@ class GradleBuildChangeDetectorTest {
 			buildScript.absolutePath.createFileURI
 		)
 		assertThat(actualChanges.deletedResources).isEmpty
+	}
+
+	@Test
+	def void runsGradleBuildToRecompileIfJavaFilesWereModified() {
+		// given
+		tmpDir.newFile('build.gradle')
+		val sourcePath = tmpDir.newFolder('src', 'main', 'java')
+		val javaFile = new File(sourcePath, 'Sample.java')
+		val gradleWrapper = tmpDir.newFile('gradlew') => [
+			executable = true
+		]
+		write(gradleWrapper, '''
+			#!/bin/sh
+			if [ "$1" = "assemble" ]
+			then
+				mkdir build
+				touch build/Sample.class
+			fi
+		''', UTF_8)
+		val previouslyDetectedChanges = new ChangedResources => [
+			modifiedResources += javaFile.absolutePath.createFileURI
+		]
+
+		// when
+		gradleChangeDetectorUnderTest.detectChanges(mock(ResourceSet), #[sourcePath.absolutePath], previouslyDetectedChanges)
+
+		// then
+		assertThat(previouslyDetectedChanges.classPath.map[new File(it)]).anySatisfy [
+			assertThat(FileUtils.listFiles(it, #['class'], true)).anyMatch[name == 'Sample.class']
+		]
+	}
+
+	@Test
+	def void doesNothingIfJavaFileIsOutsideSearchPath() {
+		// given
+		val ignoredPath = tmpDir.newFolder('ignored', 'path')
+		val javaFile = new File(ignoredPath, 'Sample.java')
+		val javaFileURI = javaFile.absolutePath.createFileURI
+
+		write(javaFile, '''public class Sample {}''', UTF_8)
+		val previouslyDetectedChanges = new ChangedResources => [
+			modifiedResources += javaFileURI
+		]
+
+		// when
+		gradleChangeDetectorUnderTest.detectChanges(mock(ResourceSet), #[tmpDir.newFolder('src', 'main', 'java').absolutePath],
+			previouslyDetectedChanges)
+
+		// then
+		assertThat(previouslyDetectedChanges).satisfies [
+			assertThat(classPath).isEmpty
+			assertThat(modifiedResources).containsOnly(javaFileURI)
+			assertThat(deletedResources).isEmpty
+		]
 	}
 
 }
