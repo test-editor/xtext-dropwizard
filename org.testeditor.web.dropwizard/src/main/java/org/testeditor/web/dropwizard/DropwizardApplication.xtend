@@ -19,6 +19,7 @@ import org.testeditor.web.dropwizard.auth.User
 import org.testeditor.web.dropwizard.auth.UserProvider
 
 import static org.eclipse.jetty.servlets.CrossOriginFilter.*
+import javax.servlet.FilterRegistration.Dynamic
 
 abstract class DropwizardApplication<T extends DropwizardApplicationConfiguration> extends Application<T> {
 
@@ -73,8 +74,8 @@ abstract class DropwizardApplication<T extends DropwizardApplicationConfiguratio
 		])
 	}
 
-	protected def void configureCorsFilter(T configuration, Environment environment) {
-		environment.servlets.addFilter("CORS", CrossOriginFilter) => [
+	protected def Dynamic configureCorsFilter(T configuration, Environment environment) {
+		return environment.servlets.addFilter("CORS", CrossOriginFilter) => [
 			// Configure CORS parameters
 			setInitParameter(ALLOWED_ORIGINS_PARAM, "*")
 			setInitParameter(ALLOWED_HEADERS_PARAM, "*")
