@@ -12,6 +12,7 @@ import io.dropwizard.setup.Environment
 import java.util.EnumSet
 import java.util.List
 import javax.servlet.DispatcherType
+import javax.servlet.FilterRegistration.Dynamic
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature
 import org.testeditor.web.dropwizard.auth.DefaultAuthDynamicFeature
@@ -73,8 +74,8 @@ abstract class DropwizardApplication<T extends DropwizardApplicationConfiguratio
 		])
 	}
 
-	protected def void configureCorsFilter(T configuration, Environment environment) {
-		environment.servlets.addFilter("CORS", CrossOriginFilter) => [
+	protected def Dynamic configureCorsFilter(T configuration, Environment environment) {
+		return environment.servlets.addFilter("CORS", CrossOriginFilter) => [
 			// Configure CORS parameters
 			setInitParameter(ALLOWED_ORIGINS_PARAM, "*")
 			setInitParameter(ALLOWED_HEADERS_PARAM, "*")
