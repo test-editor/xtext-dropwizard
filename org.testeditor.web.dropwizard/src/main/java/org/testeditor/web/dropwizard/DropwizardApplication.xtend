@@ -12,6 +12,7 @@ import io.dropwizard.setup.Environment
 import java.util.EnumSet
 import java.util.List
 import javax.servlet.DispatcherType
+import javax.servlet.FilterRegistration.Dynamic
 import org.eclipse.jetty.servlets.CrossOriginFilter
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature
 import org.testeditor.web.dropwizard.auth.DefaultAuthDynamicFeature
@@ -19,7 +20,6 @@ import org.testeditor.web.dropwizard.auth.User
 import org.testeditor.web.dropwizard.auth.UserProvider
 
 import static org.eclipse.jetty.servlets.CrossOriginFilter.*
-import javax.servlet.FilterRegistration.Dynamic
 
 abstract class DropwizardApplication<T extends DropwizardApplicationConfiguration> extends Application<T> {
 
