@@ -45,7 +45,7 @@ class GitService {
 	String privateKeyLocation
 	String knownHostsLocation
 
-	/** 
+	/**
 	 * initialize this git service. either open the existing git and pull, or clone the remote repo
 	 */
 	def void init(String localRepoFileRoot, String remoteRepoUrl, String branchName, String privateKeyLocation, String knownHostsLocation) {
@@ -104,7 +104,7 @@ class GitService {
 		return git.repository.resolve('HEAD^{tree}')
 	}
 
-	/** 
+	/**
 	 * calculate diff between these two commits
 	 */
 	def List<DiffEntry> calculateDiff(String oldHeadCommit, String newHeadCommit) {
@@ -113,13 +113,13 @@ class GitService {
 
 	/**
 	 * Calculates diff of the provided commit against the empty tree.
-	 * 
+	 *
 	 * This basically lists all files under version control up to the specified
 	 * commit, i.e. all diff entries being returned are going to be of change
 	 * type 'ADD'. This is handy for change detection, to handle a situation
 	 * in which all files need to be treated as new (e.g. after the working copy
 	 * has just been cloned from a remote) in the same manner as any other diff
-	 * against a specific revision. 
+	 * against a specific revision.
 	 */
 	def List<DiffEntry> allFilesAsDiff(String newHeadCommit) {
 		return calculateDiffAgainstEmptyTree(ObjectId.fromString(newHeadCommit))
@@ -164,11 +164,11 @@ class GitService {
 		git = cloneCommand.call
 		git.checkoutBranch(branchName)
 	}
-	
+
 	private def void checkoutBranch(Git git, String branchName) {
 		git.checkout => [
 			if (!git.branchList.call.exists[
-				val existingBranchName = name.replaceFirst('^refs/heads/', '') 
+				val existingBranchName = name.replaceFirst('^refs/heads/', '')
 				return existingBranchName == branchName
 			]) {
  	       		setCreateBranch(true)
@@ -177,7 +177,7 @@ class GitService {
  			setName(branchName)
  			call
  		]
-		
+
 	}
 
 	@VisibleForTesting
@@ -194,7 +194,7 @@ class GitService {
 				The currently existing Git repository remote URL does not match the configured one.
 					repository location: «git.repository.directory»
 					remote origin: «currentRemoteUrl»
-					remote origin as per configuration: «configuredRemoteRepoUrl» 
+					remote origin as per configuration: «configuredRemoteRepoUrl»
 			'''
 			throw new IllegalArgumentException(message)
 		}
@@ -225,7 +225,7 @@ class GitService {
 				if (!knownHostsLocation.isNullOrEmpty) {
 					defaultJSch.knownHosts = knownHostsLocation
 					defaultJSch.hostKeyRepository.hostKey.forEach [
-						logger.info('''host = «host», type = «type», key = «key», fingerprint = «getFingerPrint(defaultJSch)»''')
+						logger.info('''knownhost = «host», type = «type», key = «key», fingerprint = «getFingerPrint(defaultJSch)»''')
 					]
 				}
 				return defaultJSch
@@ -240,5 +240,5 @@ class GitService {
 		]
 
 	}
-			
+
 }
