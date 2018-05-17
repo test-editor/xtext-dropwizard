@@ -9,7 +9,7 @@ class GitServiceDiffTest extends AbstractGitTest {
 
 	@Before
 	def void setupGitService() {
-		gitService.init(localRepoRoot.path, remoteRepoRoot.path)
+		gitService.init(localRepoRoot.path, remoteRepoRoot.path, branchName)
 	}
 
 	@Test

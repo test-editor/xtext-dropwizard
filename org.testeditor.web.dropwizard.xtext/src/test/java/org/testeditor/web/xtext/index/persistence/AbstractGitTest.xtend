@@ -23,6 +23,7 @@ class AbstractGitTest extends AbstractTest {
 	protected File localRepoRoot
 	protected File remoteRepoRoot
 	protected Git remoteGit
+	protected String branchName
 
 	@Inject protected extension JGitTestUtils
 	@Inject protected extension FileTestUtils
@@ -31,6 +32,7 @@ class AbstractGitTest extends AbstractTest {
 	def void initializeVariables() {
 		localRepoRoot = localRepoTemporaryFolder.root
 		remoteRepoRoot = remoteRepoTemporaryFolder.root
+		branchName = 'master'
 		remoteGit = Git.init.setDirectory(remoteRepoRoot).call
 		remoteGit.commit.setMessage("Initial commit").call // only after this initial commit a 'master' branch is present
 	}

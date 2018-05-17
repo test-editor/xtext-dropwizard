@@ -124,7 +124,7 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 		write(root, 'src/test/java/Demo.mydsl', 'Hello Peter!')
 		addAndCommit(remoteGit, 'src/test/java/Demo.mydsl', 'Add MyDsl.xtext as an example')
 
-		gitService.init(config.localRepoFileRoot, config.remoteRepoUrl)
+		gitService.init(config.localRepoFileRoot, config.remoteRepoUrl, config.branchName)
 	}
 
 	@Test

@@ -13,30 +13,30 @@ import org.junit.rules.ExpectedException
 import org.junit.rules.TemporaryFolder
 
 class GitServiceInitTest extends AbstractGitTest {
-	
+
 	@Rule public TemporaryFolder keyfiles = new TemporaryFolder
 	@Rule public ExpectedException expectedException = ExpectedException.none
-	
+
 	@Test
 	def void cloneTriesToUsePrivateKeyIfConfigured() {
 		// given
 		val invalidPrivateKey = write(keyfiles.root, 'invalid-private-key-file', 'invalid-private-key-content')
 		expectedException.expect(TransportException)
 		expectedException.expectMessage('invalid privatekey')
-		
+
 		// when
 		gitService.init(localRepoRoot.path, 'git@git.example.com:test-editor/test-editor-examples.git', 'master', invalidPrivateKey.absolutePath, null)
-		
+
 		// then (expected exception is thrown)
 	}
-	
+
 	@Test
 	def void cloneUsesPrivateKeyIfConfiguredButFailsOnHostThen() {
 		// given
 		val dummyButValidPrivateKey = write(keyfiles.root, 'dummy-private-key-file',
 			'''
 				-----BEGIN RSA PRIVATE KEY BLOCK-----
-				
+
 				lQHYBFo7o+MBBADJg6nDraGCWwCCs4+J+VZP94htAXOgzY3LekOumSH55ywNPluM
 				gc5FPljiCS+UNEl1yYk+oFshClXhVSevtur/mXgUYck9V8n81fOlJBKPowJ/KiC5
 				KdHRJX7SdUEvK0UymNsIEIhAyqGCT/9OcpIZSJy0mJoaY50da4rxaod9KQARAQAB
@@ -70,13 +70,13 @@ class GitServiceInitTest extends AbstractGitTest {
 			''')
 		expectedException.expect(TransportException)
 		expectedException.expectMessage('unknown host')
-		
+
 		// when
 		gitService.init(localRepoRoot.path, 'git@git.example.com:test-editor/test-editor-examples.git', 'master', dummyButValidPrivateKey.absolutePath, null)
-		
+
 		// then (expected exception is thrown)
 	}
-	
+
 
 
 	@Test
@@ -91,7 +91,7 @@ class GitServiceInitTest extends AbstractGitTest {
 		val lastLocalCommit = Git.init.setDirectory(localRepoRoot).call.lastCommit
 		lastLocalCommit.assertEquals(remoteHead)
 		gitService.headTree.name().assertEquals(lastLocalCommit.tree.name())
-		gitService.branchName.assertEquals('develop') 
+		gitService.branchName.assertEquals('develop')
 	}
 
 	@Test
@@ -116,7 +116,7 @@ class GitServiceInitTest extends AbstractGitTest {
 		Git.cloneRepository.setDirectory(localRepoRoot).setURI(remoteRepoRoot.path).call
 
 		// when
-		gitService.init(localRepoRoot.path, remoteRepoRoot.path)
+		gitService.init(localRepoRoot.path, remoteRepoRoot.path, branchName)
 
 		// then
 		gitService.git.lastCommit.assertEquals(remoteHead)
@@ -147,7 +147,7 @@ class GitServiceInitTest extends AbstractGitTest {
 		// when + then
 		expectedException.expect(IllegalArgumentException)
 		expectedException.expectMessage('''Configured localRepoFileRoot=«invalidLocalRepoFileRoot» is not a directory!''')
-		gitService.init(invalidLocalRepoFileRoot, remoteRepoRoot.path)
+		gitService.init(invalidLocalRepoFileRoot, remoteRepoRoot.path, branchName)
 	}
 
 	private def RevCommit createExampleFileOnRemote() {

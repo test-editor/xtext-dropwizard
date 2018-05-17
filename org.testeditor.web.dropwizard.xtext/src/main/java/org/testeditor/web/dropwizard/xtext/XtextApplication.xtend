@@ -56,7 +56,8 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 			binder.bind(IndexFilter).annotatedWith(Names.named(ChangeFilter.FILTER_CHANGES_FOR_INDEX)).to(LanguageExtensionBasedIndexFilter)
 			binder.bind(ChangeDetector).to(TestEditorChangeDetector)
 			binder.bind(ResponseBuilder).toProvider[Response.ok]
-			binder.bind(new TypeLiteral<Iterable<ISetup>>() {}).toProvider[getLanguageSetups(indexModule)]
+			binder.bind(new TypeLiteral<Iterable<ISetup>>() {
+			}).toProvider[getLanguageSetups(indexModule)]
 			binder.bind(IndexSearchPathProvider).toInstance[#[]]
 			binder.bind(IContainer.Manager).to(ProjectDescriptionBasedContainerManager)
 			binder.bind(AbstractFileSystemAccess).to(JavaIoFileSystemAccess)
