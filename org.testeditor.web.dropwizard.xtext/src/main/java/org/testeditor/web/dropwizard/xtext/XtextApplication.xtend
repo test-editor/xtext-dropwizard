@@ -96,7 +96,7 @@ abstract class XtextApplication<T extends XtextConfiguration> extends Dropwizard
 	}
 
 	protected def void initializeXtextIndex(Environment environment) {
-		gitService.init(config.localRepoFileRoot, config.remoteRepoUrl, config.privateKeyLocation, config.knownHostsLocation)
+		gitService.init(config.localRepoFileRoot, config.remoteRepoUrl, config.branchName, config.privateKeyLocation, config.knownHostsLocation)
 		buildManager.startBuild
 	}
 

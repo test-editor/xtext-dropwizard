@@ -7,6 +7,7 @@ import com.jcraft.jsch.Session
 import java.io.File
 import java.util.List
 import javax.inject.Singleton
+import org.eclipse.jgit.api.CreateBranchCommand
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.GitCommand
 import org.eclipse.jgit.api.TransportCommand
@@ -47,21 +48,29 @@ class GitService {
 	/** 
 	 * initialize this git service. either open the existing git and pull, or clone the remote repo
 	 */
-	def void init(String localRepoFileRoot, String remoteRepoUrl, String privateKeyLocation, String knownHostsLocation) {
+	def void init(String localRepoFileRoot, String remoteRepoUrl, String branchName, String privateKeyLocation, String knownHostsLocation) {
 		logger.info("Initializing with localRepoFileRoot='{}', remoteRepoUrl='{}'.", localRepoFileRoot, remoteRepoUrl)
 		this.privateKeyLocation = privateKeyLocation
 		this.knownHostsLocation = knownHostsLocation
 		projectFolder = verifyIsFolderOrNonExistent(localRepoFileRoot)
 		if (isExistingGitRepository(projectFolder)) {
-			openRepository(projectFolder, remoteRepoUrl)
+			openRepository(projectFolder, remoteRepoUrl, branchName)
 			pull
 		} else {
-			cloneRepository(projectFolder, remoteRepoUrl)
+			cloneRepository(projectFolder, remoteRepoUrl, branchName)
 		}
 	}
 
 	def void init(String localRepoFileRoot, String remoteRepoUrl) {
-		init(localRepoFileRoot, remoteRepoUrl, null, null)
+		init(localRepoFileRoot, remoteRepoUrl, 'master', null, null)
+	}
+
+	def void init(String localRepoFileRoot, String remoteRepoUrl, String branchName) {
+		init(localRepoFileRoot, remoteRepoUrl, branchName, null, null)
+	}
+
+	def getBranchName() {
+		return git.repository.branch
 	}
 
 	private def File verifyIsFolderOrNonExistent(String localRepoFileRoot) {
@@ -146,23 +155,40 @@ class GitService {
 		return diff
 	}
 
-	private def void cloneRepository(File projectFolder, String remoteRepoUrl) {
+	private def void cloneRepository(File projectFolder, String remoteRepoUrl, String branchName) {
 		val cloneCommand = Git.cloneRepository => [
 			setURI(remoteRepoUrl)
 			setSshSessionFactory
 			setDirectory(projectFolder)
 		]
 		git = cloneCommand.call
+		git.checkoutBranch(branchName)
+	}
+	
+	private def void checkoutBranch(Git git, String branchName) {
+		git.checkout => [
+			if (!git.branchList.call.exists[
+				val existingBranchName = name.replaceFirst('^refs/heads/', '') 
+				return existingBranchName == branchName
+			]) {
+ 	       		setCreateBranch(true)
+        		setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
+        	}
+ 			setName(branchName)
+ 			call
+ 		]
+		
 	}
 
 	@VisibleForTesting
-	protected def void openRepository(File projectFolder, String remoteRepoUrl) {
+	protected def void openRepository(File projectFolder, String remoteRepoUrl, String branchName) {
 		git = Git.open(projectFolder)
+		git.checkout.setName(branchName).call
 		verifyRemoteOriginMatches(remoteRepoUrl)
 	}
 
 	private def void verifyRemoteOriginMatches(String configuredRemoteRepoUrl) {
-		val currentRemoteUrl = getRemoteUrl()
+		val currentRemoteUrl = remoteUrl
 		if (currentRemoteUrl != configuredRemoteRepoUrl) {
 			val message = '''
 				The currently existing Git repository remote URL does not match the configured one.
@@ -214,5 +240,5 @@ class GitService {
 		]
 
 	}
-
+			
 }

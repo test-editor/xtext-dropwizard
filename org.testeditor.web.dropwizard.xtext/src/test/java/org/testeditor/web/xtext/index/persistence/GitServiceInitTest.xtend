@@ -2,6 +2,7 @@ package org.testeditor.web.xtext.index.persistence
 
 import java.io.File
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.errors.RefNotFoundException
 import org.eclipse.jgit.api.errors.TransportException
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.revwalk.RevCommit
@@ -24,7 +25,7 @@ class GitServiceInitTest extends AbstractGitTest {
 		expectedException.expectMessage('invalid privatekey')
 		
 		// when
-		gitService.init(localRepoRoot.path, 'git@git.example.com:test-editor/test-editor-examples.git', invalidPrivateKey.absolutePath, null)
+		gitService.init(localRepoRoot.path, 'git@git.example.com:test-editor/test-editor-examples.git', 'master', invalidPrivateKey.absolutePath, null)
 		
 		// then (expected exception is thrown)
 	}
@@ -71,7 +72,7 @@ class GitServiceInitTest extends AbstractGitTest {
 		expectedException.expectMessage('unknown host')
 		
 		// when
-		gitService.init(localRepoRoot.path, 'git@git.example.com:test-editor/test-editor-examples.git', dummyButValidPrivateKey.absolutePath, null)
+		gitService.init(localRepoRoot.path, 'git@git.example.com:test-editor/test-editor-examples.git', 'master', dummyButValidPrivateKey.absolutePath, null)
 		
 		// then (expected exception is thrown)
 	}
@@ -79,17 +80,18 @@ class GitServiceInitTest extends AbstractGitTest {
 
 
 	@Test
-	def void clonesRemoteRepositoryWhenUninitialized() {
+	def void clonesRemoteRepositoryAndBranchWhenUninitialized() {
 		// given
 		val remoteHead = createExampleFileOnRemote()
 
 		// when
-		gitService.init(localRepoRoot.path, remoteRepoRoot.path)
+		gitService.init(localRepoRoot.path, remoteRepoRoot.path, 'develop')
 
 		// then
 		val lastLocalCommit = Git.init.setDirectory(localRepoRoot).call.lastCommit
 		lastLocalCommit.assertEquals(remoteHead)
 		gitService.headTree.name().assertEquals(lastLocalCommit.tree.name())
+		gitService.branchName.assertEquals('develop') 
 	}
 
 	@Test
@@ -131,8 +133,8 @@ class GitServiceInitTest extends AbstractGitTest {
 		]
 
 		// when + then
-		expectedException.expect(IllegalArgumentException)
-		expectedException.expectMessage('The currently existing Git repository remote URL does not match the configured one.')
+		expectedException.expect(RefNotFoundException)
+		expectedException.expectMessage('Ref master can not be resolved')
 		gitService.init(localRepoRoot.path, remoteRepoRoot.path)
 	}
 

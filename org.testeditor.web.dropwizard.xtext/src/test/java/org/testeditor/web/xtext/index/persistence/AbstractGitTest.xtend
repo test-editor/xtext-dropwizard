@@ -32,6 +32,7 @@ class AbstractGitTest extends AbstractTest {
 		localRepoRoot = localRepoTemporaryFolder.root
 		remoteRepoRoot = remoteRepoTemporaryFolder.root
 		remoteGit = Git.init.setDirectory(remoteRepoRoot).call
+		remoteGit.commit.setMessage("Initial commit").call // only after this initial commit a 'master' branch is present
 	}
 
 }

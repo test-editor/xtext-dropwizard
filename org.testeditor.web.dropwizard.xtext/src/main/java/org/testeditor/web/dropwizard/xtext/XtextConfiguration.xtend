@@ -19,6 +19,9 @@ public class XtextConfiguration extends DropwizardApplicationConfiguration {
 
 	@NotEmpty @JsonProperty
 	String remoteRepoUrl
+	
+	@NotEmpty @JsonProperty
+	String branchName = 'master'
 
 	@JsonProperty
 	String privateKeyLocation
