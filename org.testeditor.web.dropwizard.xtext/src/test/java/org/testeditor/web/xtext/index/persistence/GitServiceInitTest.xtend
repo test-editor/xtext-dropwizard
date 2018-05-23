@@ -82,6 +82,8 @@ class GitServiceInitTest extends AbstractGitTest {
 	@Test
 	def void clonesRemoteRepositoryAndBranchWhenUninitialized() {
 		// given
+		remoteGit.branchCreate.setName('develop').call // to make sure origin/develop exists!
+		remoteGit.checkout.setName('develop').call // to make sure remote head == local check out (on branch develop)
 		val remoteHead = createExampleFileOnRemote()
 
 		// when
