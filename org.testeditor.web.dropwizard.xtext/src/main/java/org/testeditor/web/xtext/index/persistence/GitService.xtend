@@ -13,6 +13,7 @@ import org.eclipse.jgit.api.GitCommand
 import org.eclipse.jgit.api.TransportCommand
 import org.eclipse.jgit.diff.DiffEntry
 import org.eclipse.jgit.lib.ObjectId
+import org.eclipse.jgit.merge.MergeStrategy
 import org.eclipse.jgit.transport.JschConfigSessionFactory
 import org.eclipse.jgit.transport.OpenSshConfig.Host
 import org.eclipse.jgit.transport.SshTransport
@@ -49,7 +50,7 @@ class GitService {
 	 * initialize this git service. either open the existing git and pull, or clone the remote repo
 	 */
 	def void init(String localRepoFileRoot, String remoteRepoUrl, String branchName, String privateKeyLocation, String knownHostsLocation) {
-		logger.info("Initializing with localRepoFileRoot='{}', remoteRepoUrl='{}'.", localRepoFileRoot, remoteRepoUrl)
+		logger.info("Initializing with localRepoFileRoot='{}', remoteRepoUrl='{}', branch='{}'.", localRepoFileRoot, remoteRepoUrl, branchName)
 		this.privateKeyLocation = privateKeyLocation
 		this.knownHostsLocation = knownHostsLocation
 		projectFolder = verifyIsFolderOrNonExistent(localRepoFileRoot)
@@ -97,7 +98,7 @@ class GitService {
 	}
 
 	def void pull() {
-		git.pull.configureTransport.call
+		git.pull.setStrategy(MergeStrategy.THEIRS).configureTransport.call
 	}
 
 	def ObjectId getHeadTree() {
@@ -175,6 +176,7 @@ class GitService {
         		setUpstreamMode(CreateBranchCommand.SetupUpstreamMode.TRACK)
         	}
  			setName(branchName)
+ 			setStartPoint("origin/" + branchName)
  			call
  		]
 
