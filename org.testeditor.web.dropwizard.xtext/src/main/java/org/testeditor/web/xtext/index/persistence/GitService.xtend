@@ -62,6 +62,17 @@ class GitService {
 		}
 	}
 
+	def Iterable<String> listAllCommittedFiles() {
+		val reader = git.repository.newObjectReader
+		try {
+			val headTreeIterator = new CanonicalTreeParser => [reset(reader, headTree)]
+			return git.diff.setOldTree(new EmptyTreeIterator).setNewTree(headTreeIterator).setShowNameAndStatusOnly(true) //
+			.call.map[newPath].filter[!equals(DiffEntry.DEV_NULL)]
+		} finally {
+			reader.close
+		}
+	}
+
 	def void init(String localRepoFileRoot, String remoteRepoUrl) {
 		init(localRepoFileRoot, remoteRepoUrl, 'master', null, null)
 	}
@@ -168,7 +179,7 @@ class GitService {
 
 	private def void checkoutBranch(Git git, String branchName) {
 		git.checkout => [
-			if (!git.branchList.call.exists[
+			if (!git.branchList.call.exists [
 				val existingBranchName = name.replaceFirst('^refs/heads/', '')
 				return existingBranchName == branchName
 			]) {
