@@ -13,9 +13,17 @@ class TestEditorChangeDetector implements ChangeDetector {
 	@Inject GradleBuildChangeDetector gradleChangeDetector
 	@Inject ChangeFilter filter
 
-	var injectorChain = memoize[ #[gitChangeDetector, gradleChangeDetector, filter] ]
+	var injectorChain = memoize[#[gitChangeDetector, gradleChangeDetector, filter]]
 
 	override detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
+		return applyInjectorChain(resourceSet, paths, accumulatedChanges)
+	}
+
+	override collectFull(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
+		return applyInjectorChain(resourceSet, paths, accumulatedChanges)
+	}
+
+	private def ChangedResources applyInjectorChain(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
 		return injectorChain.get.fold(accumulatedChanges, [ changes, detector |
 			detector.detectChanges(resourceSet, paths, changes)
 			return changes

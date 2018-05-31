@@ -23,5 +23,10 @@ class ChangeFilter implements ChangeDetector {
 		accumulatedChanges.deletedResources.removeIf[!isRelevantForIndex]
 		return accumulatedChanges
 	}
+	
+	override collectFull(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
+		accumulatedChanges.modifiedResources.removeIf[!isRelevantForIndex]
+		return accumulatedChanges
+	}
 
 }

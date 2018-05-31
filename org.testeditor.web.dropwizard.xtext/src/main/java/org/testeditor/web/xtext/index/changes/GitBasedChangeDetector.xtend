@@ -21,7 +21,15 @@ class GitBasedChangeDetector implements ChangeDetector {
 
 	var String lastUpdatedAtRevision = null
 
-	override detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
+	override ChangedResources collectFull(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
+		val root = git.projectFolder
+		git.listAllCommittedFiles.map[new File(root, it).absoluteFileURI].forEach [
+			accumulatedChanges.modifiedResources.add(it)
+		]
+		return accumulatedChanges
+	}
+
+	override ChangedResources detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
 		val root = git.projectFolder
 		pullAndGetDiff.fold(accumulatedChanges, [ changedResources, diff |
 			changedResources.handleDiff(diff, root, resourceSet)

@@ -50,18 +50,25 @@ class GradleBuildChangeDetector implements ChangeDetector {
 	var projectRoot = memoize[new File(config.get.localRepoFileRoot)]
 	var lastDetectedResources = <URI>emptySet
 
-	override detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
+	override ChangedResources collectFull(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
+		collect(resourceSet, paths, accumulatedChanges, false)
+	}
+
+	override ChangedResources detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
+		collect(resourceSet, paths, accumulatedChanges, true)
+	}
+
+	private def ChangedResources collect(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges, boolean detectDeleted) {
 		if (accumulatedChanges.modifiedResources.exists[buildScriptPath.get.equals(path)]) {
 			runGradleAssemble(projectRoot.get)
 			prepareGradleTask(projectRoot.get)
 			val jarFiles = collectClasspathJarsViaGradle(projectRoot.get)
 			val detectedResources = jarFiles.collectResources(resourceSet, languages.extensions)
 			accumulatedChanges => [
-				// conservatively assume that all resources found have also been modified.
-				// There may be room for optimization here, e.g. checking whether underlying 
-				// jars have actually been modified (last modified meta-data of file)
 				modifiedResources += detectedResources
-				deletedResources += lastDetectedResources.difference(detectedResources.toSet)
+				if (detectDeleted) {
+					deletedResources += lastDetectedResources.difference(detectedResources.toSet)
+				}
 				classPath += jarFiles
 				resourceDescriptionsProvider.indexResourceSet.installTypeProvider(classPath, jvmTypeAccess)
 			]
