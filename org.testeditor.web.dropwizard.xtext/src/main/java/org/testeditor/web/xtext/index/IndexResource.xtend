@@ -16,7 +16,7 @@ class IndexResource {
 	@Path("refresh")
 	@POST
 	def Response refresh(String payload) {
-		buildManager.startBuild
+		buildManager.startRebuild
 		return status(NO_CONTENT).build
 	}
 

@@ -43,6 +43,39 @@ class BuildCycleManager {
 	var String[] staticSearchPaths = null
 
 	var ChangedResources currentChanges
+	
+	def void startRebuild() {
+		lastIndexState = new IndexState
+		resourceDescriptionsProvider.indexResourceSet.markOutdated
+
+		val buildRequest = new BuildRequest => [
+			baseDir = baseURI.get
+			afterValidate = validationUpdater
+			resourceSet = resourceDescriptionsProvider.indexResourceSet
+			state = lastIndexState
+			indexOnly = false
+		]
+		
+		buildRequest.addChangesForFull
+		
+		buildRequest.build => [
+			indexState.updateIndex
+			affectedResources.map[uri].forEach[validate]
+			updateValidationMarkers
+		]
+	}
+
+	private def BuildRequest addChangesForFull(BuildRequest request) {
+		val baseDir = new File(config.get.localRepoFileRoot)
+		val initialChanges = new ChangedResources => [
+			classPath += config.get.indexClassPath.map[new File(baseDir, it).absolutePath]
+		]
+		return request => [
+			val changes = changeDetector.collectFull(resourceDescriptionsProvider.indexResourceSet, searchPaths, initialChanges)
+			dirtyFiles += changes.modifiedResources
+			currentChanges = changes
+		]
+	}
 
 	def void startBuild() {
 		val initialBuild = resourceDescriptionsProvider.resourceDescriptionsData === null
@@ -210,6 +243,7 @@ interface IndexSearchPathProvider {
 
 interface ChangeDetector {
 
+	def ChangedResources collectFull(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges)
 	def ChangedResources detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges)
 
 }
