@@ -40,6 +40,22 @@ class GitBasedChangeDetectorTest {
 		when(mockGit.headTree).thenReturn(headOnInitialUpdate)
 		when(mockGit.projectFolder).thenReturn(root)
 	}
+	
+	@Test
+	def void getFullListWithAbsoluteFileUriIfRequested() {
+		// given
+		val fileList = #['some.txt', 'src/other.md']
+		when(mockGit.listAllCommittedFiles).thenReturn(fileList)
+		
+		// when
+		val actualChanges = unitUnderTest.collectFull(mockResourceSet, #[root.absolutePath], new ChangedResources)
+		
+		// then
+		assertThat(actualChanges.modifiedResources).containsOnly(
+			toAbsoluteFileUri(root, 'some.txt'),
+			toAbsoluteFileUri(root, 'src/other.md')
+		)
+	}
 
 	@Test
 	def void handlesDiffCorrectlyOnFirstChangeDetection() {

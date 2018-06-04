@@ -21,6 +21,7 @@ import org.eclipse.xtext.resource.impl.ChunkedResourceDescriptions
 import org.eclipse.xtext.resource.impl.ProjectDescription
 import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
 import org.eclipse.xtext.validation.CheckMode
+import org.slf4j.LoggerFactory
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
 
@@ -28,6 +29,8 @@ import static com.google.common.base.Suppliers.memoize
 
 @Singleton
 class BuildCycleManager {
+
+	protected static val logger = LoggerFactory.getLogger(BuildCycleManager)
 
 	@Inject Provider<XtextConfiguration> config
 	@Inject ChangeDetector changeDetector
@@ -57,7 +60,12 @@ class BuildCycleManager {
 		]
 		
 		buildRequest.addChangesForFull
-		
+
+		if (logger.infoEnabled) {
+			logger.info('List of dirty files for \'startRebuild\':')
+			buildRequest.dirtyFiles.forEach[logger.info(toString)]
+		}
+
 		buildRequest.build => [
 			indexState.updateIndex
 			affectedResources.map[uri].forEach[validate]
@@ -244,6 +252,7 @@ interface IndexSearchPathProvider {
 interface ChangeDetector {
 
 	def ChangedResources collectFull(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges)
+
 	def ChangedResources detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges)
 
 }
