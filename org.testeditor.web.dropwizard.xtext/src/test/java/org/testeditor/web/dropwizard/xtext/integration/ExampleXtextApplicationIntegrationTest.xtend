@@ -52,7 +52,7 @@ class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationT
 		// when
 		write(remoteRepoTemporaryFolder.root, 'src/test/java/Unknown.mydsl', 'Hello Unknown!')
 		addAndCommit(remoteGit, 'src/test/java/Unknown.mydsl', 'added unknown')
-		createIndexRefreshRequest.submit.get
+		createIndexReloadRequest.submit.get
 
 		// then
 		val validateRequest = createValidationRequest('Another.mydsl', 'Hello Another from Unknown!')

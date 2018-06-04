@@ -49,17 +49,11 @@ class BuildCycleManager {
 	
 	def void startRebuild() {
 		lastIndexState = new IndexState
-		resourceDescriptionsProvider.indexResourceSet.markOutdated
-
-		val buildRequest = new BuildRequest => [
-			baseDir = baseURI.get
-			afterValidate = validationUpdater
-			resourceSet = resourceDescriptionsProvider.indexResourceSet
-			state = lastIndexState
-			indexOnly = false
-		]
-		
+		val buildRequest = createBuildRequest
 		buildRequest.addChangesForFull
+
+		// make sure to empty the resources list (thus the index will forced to update)
+		resourceDescriptionsProvider.indexResourceSet.resources.removeIf[true]
 
 		if (logger.infoEnabled) {
 			logger.info('List of dirty files for \'startRebuild\':')
@@ -71,6 +65,11 @@ class BuildCycleManager {
 			affectedResources.map[uri].forEach[validate]
 			updateValidationMarkers
 		]
+
+		if (logger.infoEnabled) {
+			logger.info('index contained (after full update):')
+			resourceDescriptionsProvider.indexResourceSet.resources.forEach[logger.info(URI.toString)]
+		}
 	}
 
 	private def BuildRequest addChangesForFull(BuildRequest request) {
@@ -97,13 +96,11 @@ class BuildCycleManager {
 			]
 		}
 
-		buildRequest => [
-			build => [
-				indexState.updateIndex
-				affectedResources.filter[getNew !== null].map[uri].forEach[validate]
-				affectedResources.filter[getNew === null].map[uri].forEach[removeValidationMarkers]
-				updateValidationMarkers
-			]
+		buildRequest.build => [
+			indexState.updateIndex
+			affectedResources.filter[getNew !== null].map[uri].forEach[validate]
+			affectedResources.filter[getNew === null].map[uri].forEach[removeValidationMarkers]
+			updateValidationMarkers
 		]
 	}
 

@@ -69,8 +69,8 @@ abstract class AbstractXtextIntegrationTest<C extends Configuration> extends Abs
 		return createRequest(url).buildPost(Entity.form(form))
 	}
 	
-	protected def Invocation createIndexRefreshRequest() {
-		val url = 'index/refresh'
+	protected def Invocation createIndexReloadRequest() {
+		val url = 'index/reload'
 		return createRequest(url).buildPost(null)
 	}
 

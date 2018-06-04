@@ -16,6 +16,13 @@ class IndexResource {
 	@Path("refresh")
 	@POST
 	def Response refresh(String payload) {
+		buildManager.startBuild
+		return status(NO_CONTENT).build
+	}
+
+	@Path("reload")
+	@POST
+	def Response reload(String payload) {
 		buildManager.startRebuild
 		return status(NO_CONTENT).build
 	}
