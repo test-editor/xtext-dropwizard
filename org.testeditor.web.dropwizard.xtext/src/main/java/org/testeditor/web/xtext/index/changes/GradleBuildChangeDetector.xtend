@@ -50,15 +50,12 @@ class GradleBuildChangeDetector implements ChangeDetector {
 	var projectRoot = memoize[new File(config.get.localRepoFileRoot)]
 	var lastDetectedResources = <URI>emptySet
 
-	override ChangedResources collectFull(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
-		collect(resourceSet, paths, accumulatedChanges, false)
+	override reset() {
+		lastDetectedResources = <URI>emptySet
+		return this
 	}
 
 	override ChangedResources detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
-		collect(resourceSet, paths, accumulatedChanges, true)
-	}
-
-	private def ChangedResources collect(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges, boolean detectDeleted) {
 		if (accumulatedChanges.modifiedResources.exists[buildScriptPath.get.equals(path)]) {
 			runGradleAssemble(projectRoot.get)
 			prepareGradleTaskForListingClasspath(projectRoot.get)
@@ -66,9 +63,7 @@ class GradleBuildChangeDetector implements ChangeDetector {
 			val detectedResources = jarFiles.collectResources(resourceSet, languages.extensions)
 			accumulatedChanges => [
 				modifiedResources += detectedResources
-				if (detectDeleted) {
-					deletedResources += lastDetectedResources.difference(detectedResources.toSet)
-				}
+				deletedResources += lastDetectedResources.difference(detectedResources.toSet)
 				classPath += jarFiles
 				resourceDescriptionsProvider.indexResourceSet.installTypeProvider(classPath, jvmTypeAccess)
 			]

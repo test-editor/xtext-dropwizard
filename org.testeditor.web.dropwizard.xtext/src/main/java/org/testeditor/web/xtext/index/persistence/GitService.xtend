@@ -62,17 +62,6 @@ class GitService {
 		}
 	}
 
-	def Iterable<String> listAllCommittedFiles() {
-		val reader = git.repository.newObjectReader
-		try {
-			val headTreeIterator = new CanonicalTreeParser => [reset(reader, headTree)]
-			return git.diff.setOldTree(new EmptyTreeIterator).setNewTree(headTreeIterator).setShowNameAndStatusOnly(true) //
-			.call.map[newPath].filter[!equals(DiffEntry.DEV_NULL)]
-		} finally {
-			reader.close
-		}
-	}
-
 	def void init(String localRepoFileRoot, String remoteRepoUrl) {
 		init(localRepoFileRoot, remoteRepoUrl, 'master', null, null)
 	}

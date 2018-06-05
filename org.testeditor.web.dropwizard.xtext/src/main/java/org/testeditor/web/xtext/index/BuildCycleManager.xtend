@@ -49,11 +49,10 @@ class BuildCycleManager {
 	
 	def void startRebuild() {
 		lastIndexState = new IndexState
-		val buildRequest = createBuildRequest
-		buildRequest.addChangesForFull
+		val buildRequest = createBuildRequest.addChangesForFull
 
 		// make sure to empty the resources list (thus the index will forced to update)
-		resourceDescriptionsProvider.indexResourceSet.resources.removeIf[true]
+		resourceDescriptionsProvider.indexResourceSet.resources.clear
 
 		if (logger.infoEnabled) {
 			logger.info('List of dirty files for \'startRebuild\':')
@@ -78,7 +77,7 @@ class BuildCycleManager {
 			classPath += config.get.indexClassPath.map[new File(baseDir, it).absolutePath]
 		]
 		return request => [
-			val changes = changeDetector.collectFull(resourceDescriptionsProvider.indexResourceSet, searchPaths, initialChanges)
+			val changes = changeDetector.reset.detectChanges(resourceDescriptionsProvider.indexResourceSet, searchPaths, initialChanges)
 			dirtyFiles += changes.modifiedResources
 			currentChanges = changes
 		]
@@ -248,7 +247,7 @@ interface IndexSearchPathProvider {
 
 interface ChangeDetector {
 
-	def ChangedResources collectFull(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges)
+	def ChangeDetector reset()
 
 	def ChangedResources detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges)
 

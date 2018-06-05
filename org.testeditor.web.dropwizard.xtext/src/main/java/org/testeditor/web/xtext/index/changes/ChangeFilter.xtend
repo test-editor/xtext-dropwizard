@@ -24,9 +24,8 @@ class ChangeFilter implements ChangeDetector {
 		return accumulatedChanges
 	}
 	
-	override collectFull(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
-		accumulatedChanges.modifiedResources.removeIf[!isRelevantForIndex]
-		return accumulatedChanges
+	override reset() {
+		// intentionally empty, since no (delta) state is kept 
 	}
 
 }

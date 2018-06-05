@@ -19,6 +19,7 @@ import org.testeditor.web.xtext.index.persistence.GitService
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.eclipse.jgit.diff.DiffEntry.ChangeType.*
+import static org.mockito.ArgumentMatchers.*
 
 import static extension org.eclipse.emf.common.util.URI.createFileURI
 import static extension org.mockito.Mockito.*
@@ -45,11 +46,16 @@ class GitBasedChangeDetectorTest {
 	def void getFullListWithAbsoluteFileUriIfRequested() {
 		// given
 		val fileList = #['some.txt', 'src/other.md']
-		when(mockGit.listAllCommittedFiles).thenReturn(fileList)
-		
+		when(mockGit.allFilesAsDiff(anyString)).thenReturn(fileList.map [ path |
+			DiffEntry.mock => [
+				when(newPath).thenReturn(path)
+				when(changeType).thenReturn(ADD)
+			]
+		])
+
 		// when
-		val actualChanges = unitUnderTest.collectFull(mockResourceSet, #[root.absolutePath], new ChangedResources)
-		
+		val actualChanges = unitUnderTest.reset.detectChanges(mockResourceSet, #[root.absolutePath], new ChangedResources)
+
 		// then
 		assertThat(actualChanges.modifiedResources).containsOnly(
 			toAbsoluteFileUri(root, 'some.txt'),
