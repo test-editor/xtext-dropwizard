@@ -21,7 +21,12 @@ class GitBasedChangeDetector implements ChangeDetector {
 
 	var String lastUpdatedAtRevision = null
 
-	override detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
+	override reset() {
+		lastUpdatedAtRevision = null
+		return this
+	}
+
+	override ChangedResources detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges) {
 		val root = git.projectFolder
 		pullAndGetDiff.fold(accumulatedChanges, [ changedResources, diff |
 			changedResources.handleDiff(diff, root, resourceSet)

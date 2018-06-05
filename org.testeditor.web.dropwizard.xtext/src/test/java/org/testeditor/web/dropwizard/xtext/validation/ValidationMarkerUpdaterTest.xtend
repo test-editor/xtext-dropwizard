@@ -28,10 +28,7 @@ class ValidationMarkerUpdaterTest {
 
 	static val rootPath = '/root/'
 	static val samplePath = 'path/to/file.ext'
-	static val anotherPath = 'path/to/another/different-file'
 	static val sampleURI = URI.createFileURI(rootPath + samplePath)
-	static val anotherURI = URI.createFileURI(rootPath + anotherPath)
-	static val sampleURIWithFragment = URI.createURI(rootPath + samplePath + '#fragment')
 
 	@Parameters(name = '{0}')
 	static def Iterable<Object[]> testVectors() {

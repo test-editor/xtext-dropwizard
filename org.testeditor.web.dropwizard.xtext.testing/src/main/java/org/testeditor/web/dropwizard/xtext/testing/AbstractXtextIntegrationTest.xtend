@@ -68,6 +68,11 @@ abstract class AbstractXtextIntegrationTest<C extends Configuration> extends Abs
 		val form = new Form('fullText', fullText)
 		return createRequest(url).buildPost(Entity.form(form))
 	}
+	
+	protected def Invocation createIndexReloadRequest() {
+		val url = 'index/reload'
+		return createRequest(url).buildPost(null)
+	}
 
 	protected def Invocation createValidationRequest(String resourceId, String fullText) {
 		val url = 'xtext-service/validate?resource=' + resourceId

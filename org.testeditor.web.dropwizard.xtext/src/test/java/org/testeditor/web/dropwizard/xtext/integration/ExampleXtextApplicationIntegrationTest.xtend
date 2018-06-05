@@ -4,15 +4,18 @@ import java.io.File
 import org.eclipse.jgit.api.Git
 import org.eclipse.xtext.ide.editor.contentassist.ContentAssistEntry
 import org.eclipse.xtext.resource.EObjectDescription
+import org.junit.Before
 import org.junit.Test
 import org.xtext.example.mydsl.myDsl.impl.MyDslFactoryImpl
 
 import static javax.ws.rs.core.Response.Status.*
 
 class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationTest {
-   
-   static val fileWithError = 'src/test/java/Broken.mydsl'
-   
+
+	static val fileWithError = 'src/test/java/Broken.mydsl'
+
+	val gradleAssembleCalledFileName = 'gradle.assemble.called.txt'
+
 	override protected initializeRemoteRepository(Git git, File parent) {
 		write(parent, 'build.gradle', '''apply plugin: 'java' ''')
 		addAndCommit(git, 'build.gradle', 'Add build.gradle')
@@ -23,6 +26,9 @@ class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationT
 			  echo "printTestClasspath"
 			elif [ "$1" == "printTestClasspath" ]; then
 			  echo "«parent.absolutePath»/mydsl.jar"
+			elif [ "$1" == "assemble" ]; then
+			  echo "Gradle 'assemble' called (would build classes anew)"
+			  touch «gradleAssembleCalledFileName»
 			fi
 		''')
 		new File(parent, 'gradlew').executable = true
@@ -32,6 +38,28 @@ class ExampleXtextApplicationIntegrationTest extends AbstractExampleIntegrationT
 		
 		write(parent, fileWithError, 'Helo Typo!')
 		addAndCommit(git, fileWithError, 'add file with syntax error')
+	}
+
+	@Before
+	def void cleanupTouchedFiles() {
+		new File(localRepoTemporaryFolder.root, gradleAssembleCalledFileName).delete
+	}
+
+	@Test
+	def void runFullBuildUponRequest() {
+		// given (the index is populated)
+		 
+		// when
+		write(remoteRepoTemporaryFolder.root, 'src/test/java/Unknown.mydsl', 'Hello Unknown!')
+		addAndCommit(remoteGit, 'src/test/java/Unknown.mydsl', 'added unknown')
+		createIndexReloadRequest.submit.get
+
+		// then
+		val validateRequest = createValidationRequest('Another.mydsl', 'Hello Another from Unknown!')
+		val response = validateRequest.submit.get
+		response.status.assertEquals(OK.statusCode)
+		response.readEntity(String).assertEquals('{"issues":[]}')
+		new File(localRepoTemporaryFolder.root, gradleAssembleCalledFileName).exists.assertTrue
 	}
 
 	@Test

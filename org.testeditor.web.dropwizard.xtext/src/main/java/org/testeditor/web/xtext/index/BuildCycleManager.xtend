@@ -21,6 +21,7 @@ import org.eclipse.xtext.resource.impl.ChunkedResourceDescriptions
 import org.eclipse.xtext.resource.impl.ProjectDescription
 import org.eclipse.xtext.resource.impl.ResourceDescriptionsData
 import org.eclipse.xtext.validation.CheckMode
+import org.slf4j.LoggerFactory
 import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
 
@@ -28,6 +29,8 @@ import static com.google.common.base.Suppliers.memoize
 
 @Singleton
 class BuildCycleManager {
+
+	protected static val logger = LoggerFactory.getLogger(BuildCycleManager)
 
 	@Inject Provider<XtextConfiguration> config
 	@Inject ChangeDetector changeDetector
@@ -43,6 +46,42 @@ class BuildCycleManager {
 	var String[] staticSearchPaths = null
 
 	var ChangedResources currentChanges
+	
+	def void startRebuild() {
+		lastIndexState = new IndexState
+		val buildRequest = createBuildRequest.addChangesForFull
+
+		// make sure to empty the resources list (thus the index will forced to update)
+		resourceDescriptionsProvider.indexResourceSet.resources.clear
+
+		if (logger.infoEnabled) {
+			logger.info('List of dirty files for \'startRebuild\':')
+			buildRequest.dirtyFiles.forEach[logger.info(toString)]
+		}
+
+		buildRequest.build => [
+			indexState.updateIndex
+			affectedResources.map[uri].forEach[validate]
+			updateValidationMarkers
+		]
+
+		if (logger.infoEnabled) {
+			logger.info('index contained (after full update):')
+			resourceDescriptionsProvider.indexResourceSet.resources.forEach[logger.info(URI.toString)]
+		}
+	}
+
+	private def BuildRequest addChangesForFull(BuildRequest request) {
+		val baseDir = new File(config.get.localRepoFileRoot)
+		val initialChanges = new ChangedResources => [
+			classPath += config.get.indexClassPath.map[new File(baseDir, it).absolutePath]
+		]
+		return request => [
+			val changes = changeDetector.reset.detectChanges(resourceDescriptionsProvider.indexResourceSet, searchPaths, initialChanges)
+			dirtyFiles += changes.modifiedResources
+			currentChanges = changes
+		]
+	}
 
 	def void startBuild() {
 		val initialBuild = resourceDescriptionsProvider.resourceDescriptionsData === null
@@ -56,13 +95,11 @@ class BuildCycleManager {
 			]
 		}
 
-		buildRequest => [
-			build => [
-				indexState.updateIndex
-				affectedResources.filter[getNew !== null].map[uri].forEach[validate]
-				affectedResources.filter[getNew === null].map[uri].forEach[removeValidationMarkers]
-				updateValidationMarkers
-			]
+		buildRequest.build => [
+			indexState.updateIndex
+			affectedResources.filter[getNew !== null].map[uri].forEach[validate]
+			affectedResources.filter[getNew === null].map[uri].forEach[removeValidationMarkers]
+			updateValidationMarkers
 		]
 	}
 
@@ -209,6 +246,8 @@ interface IndexSearchPathProvider {
 }
 
 interface ChangeDetector {
+
+	def ChangeDetector reset()
 
 	def ChangedResources detectChanges(ResourceSet resourceSet, String[] paths, ChangedResources accumulatedChanges)
 

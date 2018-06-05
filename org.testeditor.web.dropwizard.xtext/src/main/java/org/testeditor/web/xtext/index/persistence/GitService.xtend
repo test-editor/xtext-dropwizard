@@ -168,7 +168,7 @@ class GitService {
 
 	private def void checkoutBranch(Git git, String branchName) {
 		git.checkout => [
-			if (!git.branchList.call.exists[
+			if (!git.branchList.call.exists [
 				val existingBranchName = name.replaceFirst('^refs/heads/', '')
 				return existingBranchName == branchName
 			]) {

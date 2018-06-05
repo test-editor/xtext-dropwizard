@@ -20,4 +20,11 @@ class IndexResource {
 		return status(NO_CONTENT).build
 	}
 
+	@Path("reload")
+	@POST
+	def Response reload(String payload) {
+		buildManager.startRebuild
+		return status(NO_CONTENT).build
+	}
+
 }

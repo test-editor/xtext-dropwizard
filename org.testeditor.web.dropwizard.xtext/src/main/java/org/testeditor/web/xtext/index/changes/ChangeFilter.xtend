@@ -23,5 +23,9 @@ class ChangeFilter implements ChangeDetector {
 		accumulatedChanges.deletedResources.removeIf[!isRelevantForIndex]
 		return accumulatedChanges
 	}
+	
+	override reset() {
+		// intentionally empty, since no (delta) state is kept 
+	}
 
 }
