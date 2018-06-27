@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_URL
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_REMOTE_SECTION
 import static org.eclipse.jgit.lib.Constants.*
+import java.util.Set
 
 /**
  * provide some service around a git repo (read only)
@@ -70,8 +71,12 @@ class GitService {
 		init(localRepoFileRoot, remoteRepoUrl, branchName, null, null)
 	}
 
-	def getBranchName() {
+	def String getBranchName() {
 		return git.repository.branch
+	}
+	
+	def Set<String> getConflicts() {
+		return git.status.call.conflicting
 	}
 
 	private def File verifyIsFolderOrNonExistent(String localRepoFileRoot) {
