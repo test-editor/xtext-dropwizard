@@ -33,6 +33,8 @@ import static extension com.google.common.collect.Sets.difference
 @Singleton
 class GradleBuildChangeDetector implements ChangeDetector {
 
+	static val PRINT_TEST_CLASSPATH_INIT_SCRIPT = 'build/printTestClasspath.init.gradle'
+	static val PRINT_TEST_CLASSPATH_TASK_NAME = '_printTestClasspath'
 	static val BUILD_GRADLE_FILE_NAME = 'build.gradle'
 	static val GRADLE_PROCESS_TIMEOUT_MINUTES = 10
 	static val logger = LoggerFactory.getLogger(GradleBuildChangeDetector)
@@ -69,32 +71,22 @@ class GradleBuildChangeDetector implements ChangeDetector {
 			]
 			lastDetectedResources = detectedResources
 		}
-		
+
 		return accumulatedChanges
 	}
 
-	private def void prepareGradleTaskForListingClasspath(File repoRoot, String task, String gradleSourceCode) {
-		val process = new ProcessBuilder('./gradlew', 'tasks', '--all').directory(repoRoot).start
-		logger.info('running gradle tasks.')
-		process.waitFor(GRADLE_PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES) // allow for downloads and the like
-		val completeOutput = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8))
-		logger.info(completeOutput.join('\n'))
-		val hasPrintTestClasspathTask = completeOutput.exists[task.equals(it)]
-		if (!hasPrintTestClasspathTask) {
-			logger.info('''Adding standard gradle task '«task»'.''')
-			Files.write(Paths.get(repoRoot.absolutePath).resolve('build.gradle'), gradleSourceCode.toString.bytes, StandardOpenOption.APPEND)
-		}
-	}
-
-	/** make sure the task 'printTestClasspath' exists */
 	private def void prepareGradleTaskForListingClasspath(File repoRoot) {
-		prepareGradleTaskForListingClasspath(repoRoot, 'printTestClasspath', '''
-				task printTestClasspath {
+		val initScript = Paths.get(repoRoot.absolutePath).resolve(PRINT_TEST_CLASSPATH_INIT_SCRIPT)
+		initScript.parent.toFile.mkdirs
+		Files.write(initScript, '''
+			allprojects {
+				task «PRINT_TEST_CLASSPATH_TASK_NAME» {
 					doLast {
 						configurations.testRuntime.each { println it }
 					}
 				}
-			''')
+			}
+		'''.toString.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
 	}
 
 	/** execute task 'assemble' and wait until done */
@@ -103,13 +95,13 @@ class GradleBuildChangeDetector implements ChangeDetector {
 		logger.info('running gradle assemble.')
 		process.waitFor(GRADLE_PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES) // allow for downloads and the like
 	}
-	
-	private def  Iterable<String> collectClasspathJarsViaGradle(File repoRoot) {
-		return collectFilesViaGradle(repoRoot, 'printTestClasspath', '/', '.jar')
+
+	private def Iterable<String> collectClasspathJarsViaGradle(File repoRoot) {
+		return collectFilesViaGradle(repoRoot, PRINT_TEST_CLASSPATH_INIT_SCRIPT, PRINT_TEST_CLASSPATH_TASK_NAME, '/', '.jar')
 	}
 
-	private def Iterable<String> collectFilesViaGradle(File repoRoot, String task, String starting, String ending) {
-		val process = new ProcessBuilder('./gradlew', task).directory(repoRoot).start
+	private def Iterable<String> collectFilesViaGradle(File repoRoot, String initScript, String task, String starting, String ending) {
+		val process = new ProcessBuilder('./gradlew', '-I', initScript, task).directory(repoRoot).start
 		logger.info('''running gradle «task».''')
 		process.waitFor(GRADLE_PROCESS_TIMEOUT_MINUTES, TimeUnit.MINUTES) // allow for downloads and the like
 		val files = CharStreams.readLines(new InputStreamReader(process.inputStream, StandardCharsets.UTF_8)).filter[startsWith(starting)].filter [
