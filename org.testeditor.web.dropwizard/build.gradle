@@ -7,5 +7,10 @@ dependencies {
     compile "org.eclipse.jetty:jetty-annotations:9.3.8.v20160314"
     compile 'com.google.inject.extensions:guice-servlet:4.1.0'
     
+    // Workaround for (a problem similiar to this) issue: https://github.com/eclipse/xtext/issues/1231
+    // A SecurityException is thrown due to non-matching signer information of different classes in the same package.
+    // See also: https://github.com/test-editor/test-editor-xtext/pull/390/files
+    compile 'org.eclipse.platform:org.eclipse.equinox.common:3.10.0'
+    
     testCompile project(':org.testeditor.web.dropwizard.testing')
 }
