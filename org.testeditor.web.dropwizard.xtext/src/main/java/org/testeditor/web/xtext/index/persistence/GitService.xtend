@@ -6,6 +6,7 @@ import com.jcraft.jsch.JSchException
 import com.jcraft.jsch.Session
 import java.io.File
 import java.util.List
+import java.util.Set
 import javax.inject.Singleton
 import org.eclipse.jgit.api.CreateBranchCommand
 import org.eclipse.jgit.api.Git
@@ -70,8 +71,12 @@ class GitService {
 		init(localRepoFileRoot, remoteRepoUrl, branchName, null, null)
 	}
 
-	def getBranchName() {
+	def String getBranchName() {
 		return git.repository.branch
+	}
+	
+	def Set<String> getConflicts() {
+		return git.status.call.conflicting
 	}
 
 	private def File verifyIsFolderOrNonExistent(String localRepoFileRoot) {
