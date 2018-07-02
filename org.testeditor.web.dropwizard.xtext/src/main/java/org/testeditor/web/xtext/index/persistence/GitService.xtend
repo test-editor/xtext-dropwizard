@@ -6,6 +6,7 @@ import com.jcraft.jsch.JSchException
 import com.jcraft.jsch.Session
 import java.io.File
 import java.util.List
+import java.util.Set
 import javax.inject.Singleton
 import org.eclipse.jgit.api.CreateBranchCommand
 import org.eclipse.jgit.api.Git
@@ -27,7 +28,6 @@ import org.slf4j.LoggerFactory
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_URL
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_REMOTE_SECTION
 import static org.eclipse.jgit.lib.Constants.*
-import java.util.Set
 
 /**
  * provide some service around a git repo (read only)
