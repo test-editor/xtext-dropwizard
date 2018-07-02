@@ -76,7 +76,9 @@ class GradleBuildChangeDetector implements ChangeDetector {
 	}
 
 	private def void prepareGradleTaskForListingClasspath(File repoRoot) {
-		Files.write(Paths.get(repoRoot.absolutePath).resolve(PRINT_TEST_CLASSPATH_INIT_SCRIPT), '''
+		val initScript = Paths.get(repoRoot.absolutePath).resolve(PRINT_TEST_CLASSPATH_INIT_SCRIPT)
+		initScript.parent.toFile.mkdirs
+		Files.write(initScript, '''
 			allprojects {
 				task «PRINT_TEST_CLASSPATH_TASK_NAME» {
 					doLast {

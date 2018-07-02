@@ -113,9 +113,7 @@ class BuildCycleManagerIntegrationTest extends AbstractTestWithExampleLanguage {
 		write(root, 'gradlew', '''
 			#!/bin/bash
 			echo "running dummy gradle ..."
-			if [ "$1" == "tasks" ]; then
-			  echo "printTestClasspath"
-			elif [ "$1" == "printTestClasspath" ]; then
+			if [ "$1" = "-I" -a "$2" == "build/printTestClasspath.init.gradle" ]; then
 			  echo "«new File(tmpDir.root, localRoot).absolutePath»/mydsl.jar"
 			fi
 		''')
