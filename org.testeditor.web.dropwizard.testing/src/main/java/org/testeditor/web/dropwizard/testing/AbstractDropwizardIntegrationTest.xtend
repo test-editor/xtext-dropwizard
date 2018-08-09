@@ -25,7 +25,6 @@ abstract class AbstractDropwizardIntegrationTest<C extends Configuration> {
 	public RuleChain ruleChain = RuleChain.outerRule(dropwizardAppRule)
 
 	protected extension val AssertionHelper = AssertionHelper.instance
-	protected val client = dropwizardAppRule.client
 	protected String token = createToken()
 
 	protected def DropwizardAppRule<C> createDropwizardAppRule() {
@@ -61,12 +60,12 @@ abstract class AbstractDropwizardIntegrationTest<C extends Configuration> {
 
 	protected def Builder createRequestWithApiToken(String relativePath, String apiToken) {
 		val uri = '''«relativePath.createUri»?apiToken=«apiToken»'''
-		val builder = client.target(uri).request
+		val builder = dropwizardAppRule.client.target(uri).request
 		return builder
 	}
 
 	protected def Builder createRequestWithoutAuthorization(String relativePath) {
-		val builder = client.target(relativePath.createUri).request
+		val builder = dropwizardAppRule.client.target(relativePath.createUri).request
 		return builder
 	}
 	
