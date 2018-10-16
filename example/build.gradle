@@ -1,15 +1,10 @@
-buildscript {
-    repositories {
-        jcenter()
-    }
-    dependencies {
-        classpath 'org.xtext:xtext-gradle-plugin:1.0.17'
-    }
+plugins {
+    id 'org.xtext.xtend' version '2.0.1' apply false
 }
 
 subprojects {
 
-    ext.xtextVersion = '2.13.0'
+    ext.xtextVersion = '2.15.0'
 
     repositories {
         jcenter()
@@ -28,11 +23,16 @@ subprojects {
     group = 'org.xtext.example.mydsl'
     version = '1.0.0-SNAPSHOT'
     
-    sourceCompatibility = '1.8'
-    targetCompatibility = '1.8'
+    sourceCompatibility = '1.10'
+    targetCompatibility = '1.10'
     
     configurations.all {
         exclude group: 'asm'
+        resolutionStrategy {
+            // necessary for xtext 15 that has some emf ecore version resolution problems
+            force "org.antlr:antlr-runtime:3.2"
+            force "org.eclipse.emf:org.eclipse.emf.ecore:${xtextVersion}"
+        }
     }
 
     dependencies {
@@ -40,6 +40,7 @@ subprojects {
         // A SecurityException is thrown due to non-matching signer information of different classes in the same package.
         // See also: https://github.com/test-editor/test-editor-xtext/pull/390/files
         compile 'org.eclipse.platform:org.eclipse.equinox.common:3.10.0'
+        compile 'org.eclipse.platform:org.eclipse.core.runtime:3.15.0'
     }
 
 }

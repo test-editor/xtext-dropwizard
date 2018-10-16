@@ -39,42 +39,27 @@ subprojects {
     configurations.all {
 	    exclude group: 'asm'
         resolutionStrategy {
+            // necessary for xtext 15 that has some emf ecore version resolution problems
             force "org.antlr:antlr-runtime:3.2"
             force "org.eclipse.emf:org.eclipse.emf.ecore:$versions.xtext"
-            // force 'org.eclipse.platform:org.eclipse.equinox.common:3.10.0' // see https://github.com/eclipse/xtext/issues/1231
-            force 'org.eclipse.platform:org.eclipse.core.runtime:3.15.0'
         }
     }
-
 
     dependencies {
 
         compile "org.eclipse.xtend:org.eclipse.xtend.lib:$versions.xtext"
         compile "com.google.inject:guice:4.2.+"
+
+        // Workaround for (a problem similiar to this) issue: https://github.com/eclipse/xtext/issues/1231
+        // A SecurityException is thrown due to non-matching signer information of different classes in the same package.
+        compile 'org.eclipse.platform:org.eclipse.core.runtime:3.15.0'
+
+        // necessary for java 9,10 and probably 11, since some packages have been removed from standard runtime
+        compile 'javax.activation:activation:1.1.1'
         compile 'javax.annotation:javax.annotation-api:1.3.2'
         compile 'javax.xml.bind:jaxb-api:2.3.0'
-        // compile 'com.sun.xml.bind:jaxb-core:2.3.0'
-        // compile 'com.sun.xml.bind:jaxb-impl:2.3.0'
-        // compile 'org.glassfish.jaxb:jaxb-runtime:2.3.0'
-        compile 'javax.activation:activation:1.1.1'
-        // compile 'com.sun.activation:javax.activation:1.2.0'
-
-        // compile "javax.xml.bind:jaxb-api:2.3.0"
-        // compile "javax.activation:activation:1.1"
-        // compile "com.sun.xml.bind:jaxb-impl:2.3.0"
-        // compile "com.sun.xml.bind:jaxb-core:2.3.0"
-        // compile "com.sun.xml.ws:rt:2.3.0"
-        // compile "com.sun.xml.ws:jaxws-rt:2.3.0"
     }
 
-    // test {
-    //     doFirst {
-    //         jvmArgs = [
-    //             '--add-modules', 'ALL-SYSTEM',
-    //             '--add-modules', 'java.xml.bind'
-    //         ]
-    //     }
-    // }
 }
 
 release {
