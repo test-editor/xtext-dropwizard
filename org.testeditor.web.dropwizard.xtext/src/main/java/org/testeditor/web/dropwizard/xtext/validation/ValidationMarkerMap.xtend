@@ -2,6 +2,7 @@ package org.testeditor.web.dropwizard.xtext.validation
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicLong
 import javax.inject.Singleton
 import org.slf4j.LoggerFactory
@@ -52,7 +53,7 @@ class ValidationMarkerMap {
 		return validationMarkers.values
 	}
 
-	def Iterable<ValidationSummary> waitForAnyNewMarkersSince(long lastAccessed, long timeoutMillis) {
+	def Iterable<ValidationSummary> waitForAnyNewMarkersSince(long lastAccessed, long timeoutMillis) throws TimeoutException {
 		return if (newMarkersAvailableSince(lastAccessed)) {
 			allMarkers
 		} else {
