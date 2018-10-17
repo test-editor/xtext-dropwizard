@@ -17,4 +17,4 @@ script:
   - nix-shell --command "cd example/ && ./gradlew check && cd .."
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-  - ./.travis-publishOnRelease.sh
+  - nix-shell --command "./.travis-publishOnRelease.sh"
