@@ -4,6 +4,12 @@ repositories {
     }
 }
 
+// configure logging within tests (see https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.logging.TestLogging.html)
+// show standard out during test to see logging output
+test.testLogging.showStandardStreams = true
+// make sure that assertion failures are reported more verbose!
+test.testLogging.exceptionFormat = 'full'
+
 dependencies {
     compile project(':org.testeditor.web.dropwizard')
     compile "org.eclipse.xtext:org.eclipse.xtext.web.servlet:$versions.xtext"
