@@ -136,7 +136,7 @@ class GitServiceInitTest extends AbstractGitTest {
 
 		// when + then
 		expectedException.expect(RefNotFoundException)
-		expectedException.expectMessage('Ref master can not be resolved')
+		expectedException.expectMessage('Ref master cannot be resolved')
 		gitService.init(localRepoRoot.path, remoteRepoRoot.path)
 	}
 
