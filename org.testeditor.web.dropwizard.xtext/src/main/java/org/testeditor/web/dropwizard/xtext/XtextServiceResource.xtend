@@ -30,6 +30,8 @@ import org.eclipse.xtext.web.servlet.XtextServlet
 import org.slf4j.LoggerFactory
 import org.testeditor.web.xtext.index.LanguageAccessRegistry
 
+import static java.util.concurrent.TimeUnit.NANOSECONDS
+
 /**
  * Adapted from {@link XtextServlet}.
  */
@@ -68,12 +70,19 @@ class XtextServiceResource {
 	}
 
 	private def Response service(IServiceContext context) {
+		val enterAt = System.nanoTime
+		logger.info('Received request: {} {}', request.method, request.requestURI)
 		val service = getService(context)
+		var Response result
 		try {
-			return doService(service)
+			result = doService(service)
 		} catch (Exception exception) {
-			return handleServiceError(exception)
+			result = handleServiceError(exception)
 		}
+		
+		val duration = NANOSECONDS.toMillis(System.nanoTime - enterAt)
+		logger.info('Done processing request: {} ({} ms)', request.requestURI, duration)
+		return result
 	}
 
 	private def Response handleServiceError(Exception exception) {
