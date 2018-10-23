@@ -14,7 +14,7 @@ class XtextIndexHealthCheck extends HealthCheck {
 	override protected check() throws Exception {
 		logger.info('health check request received')
 		return if (resourceDescriptionsProvider.getResourceDescriptions(resourceDescriptionsProvider.indexResourceSet).empty) {
-			logger.info('not at all well (the Xtext index appears to be empty)')
+			logger.warn('not at all well (the Xtext index appears to be empty)')
 			Result.unhealthy('The Xtext index appears to be empty')
 		} else {
 			logger.info('clean bill of health (index has been filled)')

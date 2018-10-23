@@ -19,7 +19,7 @@ class GitHealthCheck extends HealthCheck {
 			logger.info('clean bill of health (no conflicts detected)')
 			Result.healthy
 		} else {
-			logger.info('not at all well (working copy contains conflicts)')
+			logger.warn('not at all well (working copy contains conflicts)')
 			Result.unhealthy('Working copy contains conflicts.', conflicts)
 		}
 	}
