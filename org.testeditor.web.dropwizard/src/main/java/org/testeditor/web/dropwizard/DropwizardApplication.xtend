@@ -9,6 +9,9 @@ import io.dropwizard.Application
 import io.dropwizard.auth.AuthValueFactoryProvider
 import io.dropwizard.setup.Bootstrap
 import io.dropwizard.setup.Environment
+import io.prometheus.client.CollectorRegistry
+import io.prometheus.client.dropwizard.DropwizardExports
+import io.prometheus.client.exporter.MetricsServlet
 import java.util.EnumSet
 import java.util.List
 import javax.servlet.DispatcherType
@@ -33,6 +36,7 @@ abstract class DropwizardApplication<T extends DropwizardApplicationConfiguratio
 	override run(T configuration, Environment environment) throws Exception {
 		configureCorsFilter(configuration, environment)
 		configureAuthFilter(configuration, environment)
+		configurePrometheusMetrics(environment)
 	}
 
 	/**
@@ -98,6 +102,12 @@ abstract class DropwizardApplication<T extends DropwizardApplicationConfiguratio
 			register(RolesAllowedDynamicFeature)
 			register(new AuthValueFactoryProvider.Binder(User))
 		]
+	}
+
+	def void configurePrometheusMetrics(Environment environment) {
+		val prometheusRegistry = CollectorRegistry.defaultRegistry
+		prometheusRegistry.register(new DropwizardExports(environment.metrics()))
+		environment.admin().addServlet("prometheusMetrics", new MetricsServlet(prometheusRegistry)).addMapping("/prometheusMetrics")
 	}
 
 }

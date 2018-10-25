@@ -6,6 +6,8 @@ dependencies {
     compile "com.hubspot.dropwizard:dropwizard-guice:1.0.6.0"
     compile "org.eclipse.jetty:jetty-annotations:9.3.8.v20160314"
     compile 'com.google.inject.extensions:guice-servlet:4.1.0'
+    compile 'io.prometheus:simpleclient_servlet:0.5.0'
+    compile 'io.prometheus:simpleclient_dropwizard:0.5.0'
     
     // Workaround for (a problem similiar to this) issue: https://github.com/eclipse/xtext/issues/1231
     // A SecurityException is thrown due to non-matching signer information of different classes in the same package.
