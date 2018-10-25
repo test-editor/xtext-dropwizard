@@ -112,18 +112,20 @@ class XtextServiceResource {
 	}
 
 	private def Response doService(XtextServiceDispatcher.ServiceDescriptor service) {
-		val result = service.service.apply
-		val builder = Response.ok => [
-			encoding('UTF-8')
-			cacheControl(CacheControl.valueOf('no-cache'))
-		]
-		if (result instanceof IUnwrappableServiceResult && (result as IUnwrappableServiceResult).content !== null) {
-			val unwrapResult = result as IUnwrappableServiceResult
-			builder.entity(unwrapResult.content).type(unwrapResult.contentType ?: MediaType.TEXT_PLAIN)
-		} else {
-			builder.entity(result).type(MediaType.APPLICATION_JSON)
+		synchronized (this.class) {
+			val result = service.service.apply
+			val builder = Response.ok => [
+				encoding('UTF-8')
+				cacheControl(CacheControl.valueOf('no-cache'))
+			]
+			if (result instanceof IUnwrappableServiceResult && (result as IUnwrappableServiceResult).content !== null) {
+				val unwrapResult = result as IUnwrappableServiceResult
+				builder.entity(unwrapResult.content).type(unwrapResult.contentType ?: MediaType.TEXT_PLAIN)
+			} else {
+				builder.entity(result).type(MediaType.APPLICATION_JSON)
+			}
+			return builder.build
 		}
-		return builder.build
 	}
 
 	/**
