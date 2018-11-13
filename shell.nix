@@ -17,6 +17,7 @@ let openjdk_10_0_2 = stdenv.mkDerivation rec {
         -exec patchelf --interpreter "$(cat $NIX_CC/nix-support/dynamic-linker)" \
         --set-rpath "$rpath" {} \;
     find $out -name "*.so" -exec patchelf --set-rpath "$rpath" {} \;
+
     mkdir -p $out/nix-support
     printWords ${setJavaClassPath} > $out/nix-support/propagated-build-inputs
     # Set JAVA_HOME automatically.
