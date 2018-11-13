@@ -228,6 +228,10 @@ class GitService {
 				val defaultJSch = super.createDefaultJSch(fs)
 				if (!privateKeyLocation.isNullOrEmpty) {
 					defaultJSch.addIdentity(privateKeyLocation)
+					defaultJSch.identityNames.forEach[
+						logger.info('''identity: «toString»''')
+					]
+					logger.info('''added private key from location: «privateKeyLocation»''')
 				}
 				if (!knownHostsLocation.isNullOrEmpty) {
 					defaultJSch.knownHosts = knownHostsLocation
