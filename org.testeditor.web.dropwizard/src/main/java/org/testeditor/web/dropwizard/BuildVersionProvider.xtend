@@ -8,10 +8,12 @@ class BuildVersionProvider {
 		
 	var Iterable<String> dependencies
 	var Iterable<String> testeditorDependencies
+	var String dependencyId 
 	
 	private def void cacheDependencies(DropwizardApplicationConfiguration configuration, String optionalDependency) {
-		if (dependencies === null || optionalDependency !== null) {
-			val resourceName = '''/«optionalDependency?:configuration.applicationId».dependencies.txt'''
+		if (dependencies === null || configuration.applicationId != dependencyId) {
+			dependencyId = optionalDependency?:configuration.applicationId
+			val resourceName = '''/«dependencyId».dependencies.txt'''
 			val res = class.getResource(resourceName)
 			dependencies = Files.readAllLines(Paths.get(res.toURI), StandardCharsets.UTF_8).filter[!startsWith('#')]
 			testeditorDependencies = dependencies.filter[startsWith('org.testeditor')]
