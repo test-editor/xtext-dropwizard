@@ -25,7 +25,7 @@ class ExampleApplicationIntegrationTest extends AbstractDropwizardIntegrationTes
 	}
 	
 	@Test
-	def void canGetVersions() {
+	def void getVersions() {
 		// given
 		val request = createRequest('versions/all').buildGet
 
@@ -38,7 +38,7 @@ class ExampleApplicationIntegrationTest extends AbstractDropwizardIntegrationTes
 	}
 
 	@Test
-	def void canGetExplicitDependenciesVersions() {
+	def void getExplicitDependenciesVersions() {
 		// given
 		val request = createRequest('versions/all?dependency=other').buildGet
 
@@ -49,6 +49,20 @@ class ExampleApplicationIntegrationTest extends AbstractDropwizardIntegrationTes
 		response.status.assertEquals(OK.statusCode)
 		response.readEntity(List).assertSingleElement.assertEquals('org.testeditor:org.testeditor.other:0.1.0')
 	}
+
+	@Test
+	def void explicitDependenciesVersionsEmpytIfNotExistent() {
+		// given
+		val request = createRequest('versions/all?dependency=notExistent').buildGet
+
+		// when
+		val response = request.submit.get
+
+		// then
+		response.status.assertEquals(OK.statusCode)
+		response.readEntity(List).assertEmpty
+	}
+
 
 	@Test
 	def void canAccessProtectedResourceWithJWT() {

@@ -15,8 +15,13 @@ class BuildVersionProvider {
 			dependencyId = optionalDependency?:configuration.applicationId
 			val resourceName = '''/«dependencyId».dependencies.txt'''
 			val res = class.getResource(resourceName)
-			dependencies = Files.readAllLines(Paths.get(res.toURI), StandardCharsets.UTF_8).filter[!startsWith('#')]
-			testeditorDependencies = dependencies.filter[startsWith('org.testeditor')]
+			if (res !== null) {
+				dependencies = Files.readAllLines(Paths.get(res.toURI), StandardCharsets.UTF_8).filter[!startsWith('#')]
+				testeditorDependencies = dependencies.filter[startsWith('org.testeditor')]
+			} else {
+				dependencies = #[]
+				testeditorDependencies = #[]
+			}
 		}
 	}
 	
