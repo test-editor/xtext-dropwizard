@@ -37,6 +37,9 @@ abstract class DropwizardApplication<T extends DropwizardApplicationConfiguratio
 		configureCorsFilter(configuration, environment)
 		configureAuthFilter(configuration, environment)
 		configurePrometheusMetrics(environment)
+		environment.jersey => [
+			register(new BuildVersionResource(configuration))
+		]
 	}
 
 	/**

@@ -1,6 +1,7 @@
 package org.testeditor.web.dropwizard
 
 import io.dropwizard.testing.ConfigOverride
+import java.util.List
 import org.junit.Test
 import org.testeditor.web.dropwizard.auth.User
 import org.testeditor.web.dropwizard.testing.AbstractDropwizardIntegrationTest
@@ -17,8 +18,51 @@ class ExampleApplicationIntegrationTest extends AbstractDropwizardIntegrationTes
 	}
 
 	override protected createConfiguration() {
-		return (super.createConfiguration + #[ConfigOverride.config('apiToken', validApiToken)]).toList
+		return (super.createConfiguration + #[
+			ConfigOverride.config('apiToken', validApiToken),
+			ConfigOverride.config('applicationId', 'org.testeditor.web.dropwizard')
+		]).toList
 	}
+	
+	@Test
+	def void getVersions() {
+		// given
+		val request = createRequest('versions/all').buildGet
+
+		// when
+		val response = request.submit.get
+
+		// then
+		response.status.assertEquals(OK.statusCode)
+		response.readEntity(List).assertSingleElement.assertEquals('org.testeditor:org.testeditor.web.dropwizard:0.18.3')
+	}
+
+	@Test
+	def void getExplicitDependenciesVersions() {
+		// given
+		val request = createRequest('versions/all?dependency=other').buildGet
+
+		// when
+		val response = request.submit.get
+
+		// then
+		response.status.assertEquals(OK.statusCode)
+		response.readEntity(List).assertSingleElement.assertEquals('org.testeditor:org.testeditor.other:0.1.0')
+	}
+
+	@Test
+	def void explicitDependenciesVersionsEmpytIfNotExistent() {
+		// given
+		val request = createRequest('versions/all?dependency=notExistent').buildGet
+
+		// when
+		val response = request.submit.get
+
+		// then
+		response.status.assertEquals(OK.statusCode)
+		response.readEntity(List).assertEmpty
+	}
+
 
 	@Test
 	def void canAccessProtectedResourceWithJWT() {
@@ -122,7 +166,6 @@ class ExampleApplicationIntegrationTest extends AbstractDropwizardIntegrationTes
 	def void retrievesCorrectUser() {
 		// given
 		val request = createRequest('user').buildGet
-
 		// when
 		val response = request.submit.get
 
