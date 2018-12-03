@@ -11,8 +11,9 @@ class BuildVersionProvider {
 	var String dependencyId 
 	
 	private def void cacheDependencies(DropwizardApplicationConfiguration configuration, String optionalDependency) {
-		if (dependencies === null || configuration.applicationId != dependencyId) {
-			dependencyId = optionalDependency?:configuration.applicationId
+		val requestedDependencyId = optionalDependency ?: configuration.applicationId
+		if (dependencies === null || requestedDependencyId != dependencyId) {
+			dependencyId = requestedDependencyId
 			val resourceName = '''/«dependencyId».dependencies.txt'''
 			val res = class.getResource(resourceName)
 			if (res !== null) {
@@ -29,8 +30,9 @@ class BuildVersionProvider {
 		cacheDependencies(configuration, optionalDependency)
 		return dependencies
 	}
-	
-	def Iterable<String> getTesteditorDependencies(DropwizardApplicationConfiguration configuration, String optionalDependency) {
+
+	def Iterable<String> getTesteditorDependencies(DropwizardApplicationConfiguration configuration,
+		String optionalDependency) {
 		cacheDependencies(configuration, optionalDependency)
 		return testeditorDependencies
 	}
