@@ -1,0 +1,2 @@
+# dependencies
+org.testeditor:org.testeditor.other:0.1.0

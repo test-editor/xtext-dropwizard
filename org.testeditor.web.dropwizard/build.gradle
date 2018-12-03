@@ -16,3 +16,20 @@ dependencies {
     
     testCompile project(':org.testeditor.web.dropwizard.testing')
 }
+
+
+task logDependencies {
+    outputs.upToDateWhen { false }
+    doLast {
+        new File("${project.getBuildDir()}/resources/main").mkdirs()
+        ext.dependencyFile = new File("${project.getBuildDir()}/resources/main/${project.name}.dependencies.txt")
+        dependencyFile.text = "# ${project.name} dependencies: ${new Date().format('yyyyMMddHHmmss')} \n"
+        dependencyFile.text += "${project.group}:${project.name}:${project.version}\n"
+        configurations.compile.incoming.getResolutionResult().getAllDependencies().each {
+            dependencyFile.text += it.getSelected().toString() + "\n"
+        }
+    }
+}
+
+jar.dependsOn(logDependencies)
+test.dependsOn(logDependencies)

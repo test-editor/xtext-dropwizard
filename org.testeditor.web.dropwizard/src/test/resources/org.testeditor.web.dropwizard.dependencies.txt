@@ -1,0 +1,2 @@
+# dependencies
+org.testeditor:org.testeditor.web.dropwizard:0.18.3

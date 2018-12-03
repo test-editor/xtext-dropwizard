@@ -6,6 +6,7 @@ import io.dropwizard.Configuration
 class DropwizardApplicationConfiguration extends Configuration {
  
       String apiToken
+      String applicationId
  
       @JsonProperty
       def String getApiToken() {
@@ -17,5 +18,14 @@ class DropwizardApplicationConfiguration extends Configuration {
          this.apiToken = apiToken
       }
  
- 	
+      @JsonProperty
+      def String getApplicationId() {
+          return this.applicationId
+      }
+ 
+      @JsonProperty
+      def void setApplicationId(String applicationId) {
+         this.applicationId = applicationId
+      }
+
 }
