@@ -26,6 +26,7 @@ import org.testeditor.web.dropwizard.xtext.XtextConfiguration
 import org.testeditor.web.dropwizard.xtext.validation.ValidationMarkerUpdater
 
 import static com.google.common.base.Suppliers.memoize
+import static org.eclipse.xtext.resource.impl.ResourceDescriptionsProvider.NAMED_BUILDER_SCOPE
 
 @Singleton
 class BuildCycleManager {
@@ -144,7 +145,10 @@ class BuildCycleManager {
 	}
 
 	def Result build(BuildRequest request) {
-		return builder.build(request, [getResourceServiceProvider])
+		request.resourceSet.getLoadOptions().put(NAMED_BUILDER_SCOPE, Boolean.TRUE)
+		val result = builder.build(request, [getResourceServiceProvider])
+		request.resourceSet.getLoadOptions().remove(NAMED_BUILDER_SCOPE)
+		return result
 	}
 
 	def void updateValidationMarkers() {
