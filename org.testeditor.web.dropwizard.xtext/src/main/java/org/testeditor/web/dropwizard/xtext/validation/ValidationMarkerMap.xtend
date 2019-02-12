@@ -11,7 +11,7 @@ import static java.util.concurrent.TimeUnit.*
 
 @Singleton
 class ValidationMarkerMap {
-
+	static val MAX_MARKERS = 1000
 	static val logger = LoggerFactory.getLogger(ValidationMarkerUpdater)
 
 	val validationMarkers = new ConcurrentHashMap<String, ValidationSummary>()
@@ -25,11 +25,14 @@ class ValidationMarkerMap {
 	def void updateMarkers(Iterable<ValidationSummary> summaries) {
 		if (!summaries.empty) {
 			val currentUpdate = futureUpdate
-			summaries.forEach [ summary |
-				if (summary.hasNoIssues) {
-					validationMarkers.remove(summary.path)
-				} else {
-					validationMarkers.put(summary.path, summary)
+			summaries.groupBy[hasNoIssues] => [
+				val summariesWithoutIssues = getOrDefault(true, #[])
+				val summariesWithIssues = getOrDefault(false, #[])
+				summariesWithoutIssues.forEach[validationMarkers.remove(path)]
+				val remainingSpace = Math.max(0, MAX_MARKERS - validationMarkers.size)
+				summariesWithIssues.take(remainingSpace).forEach[validationMarkers.put(path, it)]
+				if (summariesWithIssues.size > remainingSpace) {
+					logger.warn('''Too many issues! Validation results were capped at «MAX_MARKERS» issues.''')
 				}
 			]
 			futureUpdate = new CompletableFuture<Iterable<ValidationSummary>>()
