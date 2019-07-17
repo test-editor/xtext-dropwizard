@@ -27,6 +27,13 @@ subprojects {
     targetCompatibility = '1.10'
     
     configurations.all {
+		// Download from JCenter redirects to jfrog.org, which has a certificate issued by Amazon.
+		// Amazon's certificates are not included in the trust store of OpenJDK 10, so that the dependency resolution
+		// will fail.
+		// Since this is merely a demo project, we do not really need JQuery, and even our actual projects do not rely on it
+		// (it is part of the default Xtext for Web setup, but since we use a custom Angular frontend, its not needed).
+		exclude group: 'org.webjars', module: 'jquery'
+
         exclude group: 'asm'
         resolutionStrategy {
             // necessary for xtext 15 that has some emf ecore version resolution problems
