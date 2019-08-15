@@ -23,7 +23,7 @@ subprojects {
 
     ext.versions = [
         dropwizard: '1.3.7',
-        xtext: '2.15.0'
+        xtext: '2.18.0'
     ]
 
     sourceCompatibility = '1.10'
