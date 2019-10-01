@@ -8,11 +8,18 @@ import org.junit.Rule
 import org.junit.rules.ExpectedException
 import org.junit.rules.TemporaryFolder
 import org.mockito.InjectMocks
+import org.mockito.Mock
 import org.testeditor.web.dropwizard.testing.AbstractTest
 import org.testeditor.web.dropwizard.testing.files.FileTestUtils
 import org.testeditor.web.dropwizard.testing.git.JGitTestUtils
+import org.testeditor.web.xtext.index.persistence.GitService.GitAccess
 
-class AbstractGitTest extends AbstractTest {
+import static org.mockito.ArgumentMatchers.*
+import static org.mockito.Mockito.when
+
+abstract class AbstractGitTest extends AbstractTest {
+
+	@Mock protected GitAccess gitAccess
 
 	@InjectMocks protected GitService gitService
 
@@ -35,6 +42,12 @@ class AbstractGitTest extends AbstractTest {
 		branchName = 'master'
 		remoteGit = Git.init.setDirectory(remoteRepoRoot).call
 		remoteGit.commit.setMessage("Initial commit").call // only after this initial commit a 'master' branch is present
+	}
+	
+	@Before
+	def void initializeGitAccess() {
+		when(gitAccess.open(any)).thenCallRealMethod
+		when(gitAccess.cloneRepository).thenCallRealMethod
 	}
 
 }
