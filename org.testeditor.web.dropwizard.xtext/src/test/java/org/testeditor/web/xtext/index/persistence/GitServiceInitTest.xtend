@@ -2,6 +2,7 @@ package org.testeditor.web.xtext.index.persistence
 
 import java.io.File
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.errors.JGitInternalException
 import org.eclipse.jgit.api.errors.RefNotFoundException
 import org.eclipse.jgit.api.errors.TransportException
 import org.eclipse.jgit.lib.Constants
@@ -11,6 +12,9 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.ExpectedException
 import org.junit.rules.TemporaryFolder
+
+import static org.mockito.Mockito.reset
+import static org.mockito.Mockito.when
 
 class GitServiceInitTest extends AbstractGitTest {
 
@@ -150,6 +154,23 @@ class GitServiceInitTest extends AbstractGitTest {
 		expectedException.expect(IllegalArgumentException)
 		expectedException.expectMessage('''Configured localRepoFileRoot=«invalidLocalRepoFileRoot» is not a directory!''')
 		gitService.init(invalidLocalRepoFileRoot, remoteRepoRoot.path, branchName)
+	}
+	
+	@Test
+	def void fallsBackToCloneFreshWhenUnableToOpenExistingRepository() {
+		// given
+		reset(gitAccess)
+		when(gitAccess.open(localRepoRoot)).thenThrow(new JGitInternalException('mock simulated problem while trying to open the existing repository'))
+		when(gitAccess.cloneRepository).thenCallRealMethod
+		
+		val remoteHead = createExampleFileOnRemote()
+		Git.cloneRepository.setDirectory(localRepoRoot).setURI(remoteRepoRoot.path).call
+
+		// when
+		gitService.init(localRepoRoot.path, remoteRepoRoot.path, branchName)
+
+		// then
+		gitService.git.lastCommit.assertEquals(remoteHead)
 	}
 
 	private def RevCommit createExampleFileOnRemote() {
