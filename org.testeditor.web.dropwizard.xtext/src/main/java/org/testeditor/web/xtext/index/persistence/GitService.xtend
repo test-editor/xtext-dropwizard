@@ -74,8 +74,14 @@ class GitService {
 		this.knownHostsLocation = knownHostsLocation
 		projectFolder = verifyIsFolderOrNonExistent(localRepoFileRoot)
 		if (isExistingGitRepository(projectFolder)) {
-			openRepository(projectFolder, remoteRepoUrl, branchName)
-			pull
+			try {
+				openRepository(projectFolder, remoteRepoUrl, branchName)
+				pull
+			} catch (JGitInternalException ex) {
+				logger.error('Failed to open existing working copy. Fallback: delete and clone a fresh working copy.', ex)
+				projectFolder.deleteDirectory
+				cloneRepository(projectFolder, remoteRepoUrl, branchName)
+			}
 		} else {
 			cloneRepository(projectFolder, remoteRepoUrl, branchName)
 		}
