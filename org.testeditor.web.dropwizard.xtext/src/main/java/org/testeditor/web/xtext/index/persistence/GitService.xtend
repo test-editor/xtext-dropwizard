@@ -7,11 +7,14 @@ import com.jcraft.jsch.Session
 import java.io.File
 import java.util.List
 import java.util.Set
+import javax.inject.Inject
 import javax.inject.Singleton
+import org.eclipse.jgit.api.CloneCommand
 import org.eclipse.jgit.api.CreateBranchCommand
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.GitCommand
 import org.eclipse.jgit.api.TransportCommand
+import org.eclipse.jgit.api.errors.JGitInternalException
 import org.eclipse.jgit.diff.DiffEntry
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.merge.MergeStrategy
@@ -29,11 +32,26 @@ import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_KEY_URL
 import static org.eclipse.jgit.lib.ConfigConstants.CONFIG_REMOTE_SECTION
 import static org.eclipse.jgit.lib.Constants.*
 
+import static extension org.apache.commons.io.FileUtils.deleteDirectory
+
 /**
  * provide some service around a git repo (read only)
  */
 @Singleton
 class GitService {
+	/**
+	 * Wrapper around static methods of class Git for testing / mocknig purposes.
+	 */
+	static class GitAccess {
+		def Git open(File workingCopyDir) {
+			return Git.open(workingCopyDir)
+		}
+		def CloneCommand cloneRepository() {
+			return Git.cloneRepository
+		}
+	}
+	
+	@Inject GitAccess gitAccess
 
 	static val logger = LoggerFactory.getLogger(GitService)
 
@@ -56,8 +74,14 @@ class GitService {
 		this.knownHostsLocation = knownHostsLocation
 		projectFolder = verifyIsFolderOrNonExistent(localRepoFileRoot)
 		if (isExistingGitRepository(projectFolder)) {
-			openRepository(projectFolder, remoteRepoUrl, branchName)
-			pull
+			try {
+				openRepository(projectFolder, remoteRepoUrl, branchName)
+				pull
+			} catch (JGitInternalException ex) {
+				logger.error('Failed to open existing working copy. Fallback: delete and clone a fresh working copy.', ex)
+				projectFolder.deleteDirectory
+				cloneRepository(projectFolder, remoteRepoUrl, branchName)
+			}
 		} else {
 			cloneRepository(projectFolder, remoteRepoUrl, branchName)
 		}
@@ -162,7 +186,7 @@ class GitService {
 	}
 
 	private def void cloneRepository(File projectFolder, String remoteRepoUrl, String branchName) {
-		val cloneCommand = Git.cloneRepository => [
+		val cloneCommand = gitAccess.cloneRepository => [
 			setURI(remoteRepoUrl)
 			setSshSessionFactory
 			setDirectory(projectFolder)
@@ -189,7 +213,7 @@ class GitService {
 
 	@VisibleForTesting
 	protected def void openRepository(File projectFolder, String remoteRepoUrl, String branchName) {
-		git = Git.open(projectFolder)
+		git = gitAccess.open(projectFolder)
 		git.checkout.setName(branchName).call
 		verifyRemoteOriginMatches(remoteRepoUrl)
 	}
