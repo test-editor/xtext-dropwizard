@@ -5,6 +5,7 @@ import com.jcraft.jsch.JSch
 import com.jcraft.jsch.JSchException
 import com.jcraft.jsch.Session
 import java.io.File
+import java.io.IOException
 import java.util.List
 import java.util.Set
 import javax.inject.Inject
@@ -43,7 +44,7 @@ class GitService {
 	 * Wrapper around static methods of class Git for testing / mocknig purposes.
 	 */
 	static class GitAccess {
-		def Git open(File workingCopyDir) {
+		def Git open(File workingCopyDir) throws IOException {
 			return Git.open(workingCopyDir)
 		}
 		def CloneCommand cloneRepository() {
