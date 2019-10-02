@@ -17,6 +17,7 @@ import org.eclipse.jgit.api.GitCommand
 import org.eclipse.jgit.api.TransportCommand
 import org.eclipse.jgit.api.errors.JGitInternalException
 import org.eclipse.jgit.diff.DiffEntry
+import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.merge.MergeStrategy
 import org.eclipse.jgit.transport.JschConfigSessionFactory
@@ -78,7 +79,7 @@ class GitService {
 			try {
 				openRepository(projectFolder, remoteRepoUrl, branchName)
 				pull
-			} catch (JGitInternalException ex) {
+			} catch (JGitInternalException | RepositoryNotFoundException ex) {
 				logger.error('Failed to open existing working copy. Fallback: delete and clone a fresh working copy.', ex)
 				projectFolder.deleteDirectory
 				cloneRepository(projectFolder, remoteRepoUrl, branchName)
