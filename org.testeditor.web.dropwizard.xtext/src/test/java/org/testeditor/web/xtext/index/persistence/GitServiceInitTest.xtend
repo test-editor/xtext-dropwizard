@@ -5,6 +5,7 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.errors.JGitInternalException
 import org.eclipse.jgit.api.errors.RefNotFoundException
 import org.eclipse.jgit.api.errors.TransportException
+import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.transport.URIish
@@ -161,6 +162,23 @@ class GitServiceInitTest extends AbstractGitTest {
 		// given
 		reset(gitAccess)
 		when(gitAccess.open(localRepoRoot)).thenThrow(new JGitInternalException('mock simulated problem while trying to open the existing repository'))
+		when(gitAccess.cloneRepository).thenCallRealMethod
+		
+		val remoteHead = createExampleFileOnRemote()
+		Git.cloneRepository.setDirectory(localRepoRoot).setURI(remoteRepoRoot.path).call
+
+		// when
+		gitService.init(localRepoRoot.path, remoteRepoRoot.path, branchName)
+
+		// then
+		gitService.git.lastCommit.assertEquals(remoteHead)
+	}
+	
+	@Test
+	def void fallsBackToCloneFreshWhenRepositoryNotFound() {
+		// given
+		reset(gitAccess)
+		when(gitAccess.open(localRepoRoot)).thenThrow(new RepositoryNotFoundException('mock simulated problem while trying to open the existing repository'))
 		when(gitAccess.cloneRepository).thenCallRealMethod
 		
 		val remoteHead = createExampleFileOnRemote()

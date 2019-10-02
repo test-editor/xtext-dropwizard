@@ -5,6 +5,7 @@ import com.jcraft.jsch.JSch
 import com.jcraft.jsch.JSchException
 import com.jcraft.jsch.Session
 import java.io.File
+import java.io.IOException
 import java.util.List
 import java.util.Set
 import javax.inject.Inject
@@ -16,6 +17,7 @@ import org.eclipse.jgit.api.GitCommand
 import org.eclipse.jgit.api.TransportCommand
 import org.eclipse.jgit.api.errors.JGitInternalException
 import org.eclipse.jgit.diff.DiffEntry
+import org.eclipse.jgit.errors.RepositoryNotFoundException
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.merge.MergeStrategy
 import org.eclipse.jgit.transport.JschConfigSessionFactory
@@ -43,7 +45,7 @@ class GitService {
 	 * Wrapper around static methods of class Git for testing / mocknig purposes.
 	 */
 	static class GitAccess {
-		def Git open(File workingCopyDir) {
+		def Git open(File workingCopyDir) throws IOException {
 			return Git.open(workingCopyDir)
 		}
 		def CloneCommand cloneRepository() {
@@ -77,7 +79,7 @@ class GitService {
 			try {
 				openRepository(projectFolder, remoteRepoUrl, branchName)
 				pull
-			} catch (JGitInternalException ex) {
+			} catch (JGitInternalException | RepositoryNotFoundException ex) {
 				logger.error('Failed to open existing working copy. Fallback: delete and clone a fresh working copy.', ex)
 				projectFolder.deleteDirectory
 				cloneRepository(projectFolder, remoteRepoUrl, branchName)
